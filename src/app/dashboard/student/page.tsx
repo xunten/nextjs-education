@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   BookOpen,
   FileText,
@@ -19,7 +21,8 @@ import {
 } from "lucide-react";
 
 export default function StudentDashboard() {
-  const [user, setUser] = useState<any>(null);
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   // Mock data for student dashboard
   const [dashboardData] = useState({
@@ -95,11 +98,10 @@ export default function StudentDashboard() {
   });
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
+    if (status === "unauthenticated") {
+      router.push("/auth/login");
     }
-  }, []);
+  }, [status, router]);
 
   const getGradeBadge = (grade: number, maxGrade: number) => {
     const percentage = (grade / maxGrade) * 100;
@@ -112,9 +114,12 @@ export default function StudentDashboard() {
     return <Badge variant="destructive">Yếu</Badge>;
   };
 
-  if (!user) {
+  if (status === "loading") {
     return <div>Loading...</div>;
   }
+
+  const user = session?.user;
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">

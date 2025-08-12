@@ -1,16 +1,33 @@
+// /app/api/auth/set-role/route.ts
 import { getToken } from "next-auth/jwt";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { encode } from "next-auth/jwt";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const { role } = await req.json();
-  // Lấy token hiện tại
+
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  if (!token)
+
+  if (!token) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
 
-  // Cập nhật role vào token (ở đây chỉ là ví dụ, thực tế bạn cần custom adapter hoặc lưu vào DB)
-  // Nếu dùng JWT, bạn cần custom callback jwt để nhận role từ request
+  // Cập nhật role vào token (trên server)
+  const newToken = { ...token, role };
 
-  // Trả về thành công
-  return NextResponse.json({ ok: true });
+  // Tạo cookie mới chứa token đã cập nhật
+  const newJwt = await encode({
+    token: newToken,
+    secret: process.env.NEXTAUTH_SECRET!,
+  });
+
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set("next-auth.session-token", newJwt, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    sameSite: "lax",
+  });
+
+  return res;
 }

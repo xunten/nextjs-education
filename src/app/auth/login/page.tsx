@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
+
 const schema = yup.object().shape({
   email: yup
     .string()
@@ -40,20 +41,49 @@ export default function LoginPage() {
   } = useForm<FormData>({
     resolver: yupResolver(schema),
   });
+  const onSubmit = async (data: FormData) => {
+    try {
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
 
-  const onSubmit = (data: FormData) => {
-    const mockUser = {
-      id: 1,
-      email: data.email,
-      fullName: "Người dùng Demo",
-      role: data.email.includes("teacher") ? "teacher" : "student",
-    };
-    localStorage.setItem("user", JSON.stringify(mockUser));
-    // Redirect based on role
-    const redirectPath =
-      mockUser.role === "teacher" ? "/dashboard/teacher" : "/dashboard/student";
+      if (result?.error) {
+        const message =
+          result.error === "CredentialsSignin"
+            ? "Email hoặc mật khẩu không đúng"
+            : result.error;
+        alert(message);
+        return;
+      }
 
-    router.push(redirectPath);
+      // Đợi session được cập nhật
+      await new Promise((r) => setTimeout(r, 500));
+      const session = await getSession();
+
+      const user = session?.user as
+        | { role?: "student" | "teacher"; roles?: ("student" | "teacher")[] }
+        | undefined;
+
+      if (user?.role) {
+        router.push(`/dashboard/${user.role}`);
+        return;
+      }
+
+      if (user?.roles && user.roles.length === 1) {
+        router.push(`/dashboard/${user.roles[0]}`);
+        return;
+      }
+
+      router.push("/select-role");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Đã có lỗi xảy ra");
+      }
+    }
   };
 
   return (
@@ -107,16 +137,12 @@ export default function LoginPage() {
             <div className="flex-grow h-px bg-gray-300" />
           </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              signIn("google", { callbackUrl: "/api/auth/select-role" })
-            }
-            className="w-full"
+          <button
+            onClick={() => signIn("google", { callbackUrl: "/select-role" })}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full transition"
           >
             Đăng nhập với Google
-          </Button>
+          </button>
         </CardContent>
       </Card>
     </div>

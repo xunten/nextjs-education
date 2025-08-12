@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import Navigation from "@/components/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import Navigation from "@/components/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Users,
   BookOpen,
@@ -19,10 +19,13 @@ import {
   Eye,
   Calendar,
   Target,
-} from "lucide-react"
+} from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function TeacherDashboard() {
-  const [user, setUser] = useState<any>(null)
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   // Mock data for teacher dashboard
   const [dashboardData] = useState({
@@ -77,18 +80,20 @@ export default function TeacherDashboard() {
       { name: "Trần Văn Hùng", class: "Toán 12A1", grade: 9.2 },
       { name: "Lê Thị Hoa", class: "Toán 12A2", grade: 9.0 },
     ],
-  })
+  });
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      setUser(JSON.parse(userData))
+    if (status === "unauthenticated") {
+      router.push("/auth/login");
     }
-  }, [])
+  }, [status, router]);
 
-  if (!user) {
-    return <div>Loading...</div>
+  if (status === "loading") {
+    return <div>Loading...</div>;
   }
+
+  const user = session?.user;
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -96,8 +101,12 @@ export default function TeacherDashboard() {
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Chào mừng, {user.name}!</h1>
-          <p className="text-gray-600">Tổng quan về hoạt động giảng dạy của bạn</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Chào mừng, {user.name}!
+          </h1>
+          <p className="text-gray-600">
+            Tổng quan về hoạt động giảng dạy của bạn
+          </p>
         </div>
 
         {/* Statistics Cards */}
@@ -108,7 +117,9 @@ export default function TeacherDashboard() {
               <BookOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{dashboardData.totalClasses}</div>
+              <div className="text-2xl font-bold">
+                {dashboardData.totalClasses}
+              </div>
               <p className="text-xs text-muted-foreground">Đang giảng dạy</p>
             </CardContent>
           </Card>
@@ -119,7 +130,9 @@ export default function TeacherDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{dashboardData.totalStudents}</div>
+              <div className="text-2xl font-bold">
+                {dashboardData.totalStudents}
+              </div>
               <p className="text-xs text-muted-foreground">Tổng số học sinh</p>
             </CardContent>
           </Card>
@@ -130,7 +143,9 @@ export default function TeacherDashboard() {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{dashboardData.totalAssignments}</div>
+              <div className="text-2xl font-bold">
+                {dashboardData.totalAssignments}
+              </div>
               <p className="text-xs text-muted-foreground">Đã tạo</p>
             </CardContent>
           </Card>
@@ -141,7 +156,9 @@ export default function TeacherDashboard() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{dashboardData.pendingGrading}</div>
+              <div className="text-2xl font-bold text-orange-600">
+                {dashboardData.pendingGrading}
+              </div>
               <p className="text-xs text-muted-foreground">Bài nộp mới</p>
             </CardContent>
           </Card>
@@ -164,19 +181,28 @@ export default function TeacherDashboard() {
                     </Button>
                   </Link>
                   <Link href="/classes/teacher">
-                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2 bg-transparent">
+                    <Button
+                      variant="outline"
+                      className="w-full h-20 flex flex-col gap-2 bg-transparent"
+                    >
                       <BookOpen className="h-5 w-5" />
                       <span className="text-xs">Quản lý lớp</span>
                     </Button>
                   </Link>
                   <Link href="/grades/teacher">
-                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2 bg-transparent">
+                    <Button
+                      variant="outline"
+                      className="w-full h-20 flex flex-col gap-2 bg-transparent"
+                    >
                       <Award className="h-5 w-5" />
                       <span className="text-xs">Xem điểm</span>
                     </Button>
                   </Link>
                   <Link href="/quizzes/teacher">
-                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2 bg-transparent">
+                    <Button
+                      variant="outline"
+                      className="w-full h-20 flex flex-col gap-2 bg-transparent"
+                    >
                       <Target className="h-5 w-5" />
                       <span className="text-xs">Tạo quiz</span>
                     </Button>
@@ -194,9 +220,15 @@ export default function TeacherDashboard() {
                 {dashboardData.recentActivities.map((activity) => (
                   <div key={activity.id} className="flex items-start space-x-3">
                     <div className="flex-shrink-0">
-                      {activity.type === "submission" && <FileText className="h-5 w-5 text-blue-500" />}
-                      {activity.type === "grade" && <Award className="h-5 w-5 text-green-500" />}
-                      {activity.type === "question" && <AlertCircle className="h-5 w-5 text-orange-500" />}
+                      {activity.type === "submission" && (
+                        <FileText className="h-5 w-5 text-blue-500" />
+                      )}
+                      {activity.type === "grade" && (
+                        <Award className="h-5 w-5 text-green-500" />
+                      )}
+                      {activity.type === "question" && (
+                        <AlertCircle className="h-5 w-5 text-orange-500" />
+                      )}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium">{activity.message}</p>
@@ -204,7 +236,9 @@ export default function TeacherDashboard() {
                         <Badge variant="outline" className="text-xs">
                           {activity.class}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">{activity.time}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {activity.time}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -228,16 +262,25 @@ export default function TeacherDashboard() {
                         <h4 className="font-medium">{deadline.title}</h4>
                         <Badge variant="outline">{deadline.class}</Badge>
                       </div>
-                      <span className="text-sm text-muted-foreground">{deadline.dueDate}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {deadline.dueDate}
+                      </span>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>
                           Đã nộp: {deadline.submissions}/{deadline.total}
                         </span>
-                        <span>{Math.round((deadline.submissions / deadline.total) * 100)}%</span>
+                        <span>
+                          {Math.round(
+                            (deadline.submissions / deadline.total) * 100
+                          )}
+                          %
+                        </span>
                       </div>
-                      <Progress value={(deadline.submissions / deadline.total) * 100} />
+                      <Progress
+                        value={(deadline.submissions / deadline.total) * 100}
+                      />
                     </div>
                   </div>
                 ))}
@@ -257,8 +300,12 @@ export default function TeacherDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600">{dashboardData.averageGrade}</div>
-                  <p className="text-sm text-muted-foreground">Điểm trung bình chung</p>
+                  <div className="text-3xl font-bold text-blue-600">
+                    {dashboardData.averageGrade}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Điểm trung bình chung
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
@@ -291,16 +338,25 @@ export default function TeacherDashboard() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {dashboardData.topPerformers.map((student, index) => (
-                  <div key={index} className="flex items-center justify-between">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between"
+                  >
                     <div>
                       <p className="font-medium">{student.name}</p>
-                      <p className="text-sm text-muted-foreground">{student.class}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {student.class}
+                      </p>
                     </div>
                     <Badge className="bg-green-500">{student.grade}</Badge>
                   </div>
                 ))}
                 <Link href="/grades/teacher">
-                  <Button variant="outline" size="sm" className="w-full mt-2 bg-transparent">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2 bg-transparent"
+                  >
                     <Eye className="h-4 w-4 mr-2" />
                     Xem tất cả
                   </Button>
@@ -336,5 +392,5 @@ export default function TeacherDashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }
