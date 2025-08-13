@@ -22,41 +22,45 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Eye } from "lucide-react";
 import Link from "next/link";
+import { joinClass, getStudentClasses } from "@/services/classService";
 
 export default function StudentClassesPage() {
   const [user, setUser] = useState<any>(null);
-  const [classes] = useState([
-    {
-      id: 1,
-      name: "Toán 12A1",
-      description: "Lớp toán nâng cao cho học sinh khá giỏi",
-      code: "MATH12A1",
-      studentCount: 35,
-      createdAt: "2024-01-15",
-    },
-    {
-      id: 2,
-      name: "Toán 11B2",
-      description: "Lớp toán cơ bản",
-      code: "MATH11B2",
-      studentCount: 28,
-      createdAt: "2024-01-20",
-    },
-  ]);
+  const [classes, setClasses] = useState<any[]>([]);
   const [joinCode, setJoinCode] = useState("");
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+
+      // getStudentClasses(parsedUser.id)
+      getStudentClasses(2)
+        .then((data) => {
+    console.log("API trả về:", data);
+    setClasses(Array.isArray(data) ? data : data.data || []);
+  })
+        .catch((error) => {
+          console.error("Lỗi khi lấy lớp học:", error);
+        });
     }
+
   }, []);
 
-  const handleJoinClass = () => {
-    // Simulate joining a class
-    alert(`Đã tham gia lớp với mã: ${joinCode}`);
+
+const handleJoinClass = async () => {
+  try {
+    await joinClass(Number(joinCode), 2);
+    alert("Tham gia lớp thành công!");
     setJoinCode("");
-  };
+    const data = await getStudentClasses(2);
+    setClasses(Array.isArray(data) ? data : data.data || []);
+  } catch (err) {
+    console.error("Lỗi khi tham gia lớp:", err);
+    alert("Không thể tham gia lớp");
+  }
+};
 
   if (!user) {
     return <div>Loading...</div>;
@@ -69,9 +73,7 @@ export default function StudentClassesPage() {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Lớp học của tôi
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900">Lớp học của tôi</h1>
               <p className="text-gray-600">Các lớp học bạn đã tham gia</p>
             </div>
             <Dialog>
@@ -111,23 +113,27 @@ export default function StudentClassesPage() {
                 className="hover:shadow-lg transition-shadow"
               >
                 <CardHeader>
-                  <CardTitle className="text-lg">{classItem.name}</CardTitle>
+                  <CardTitle className="text-lg">{classItem.className}</CardTitle>
                   <CardDescription>
-                    Giáo viên: Thầy/Cô {user.fullName}
+                    Giáo viên: {classItem.teacher?.fullName || "Chưa rõ"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span>Số học sinh:</span>
-                      <span>{classItem.studentCount}</span>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span>Năm học:</span>
+                      <span>{classItem.schoolYear}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between">
+                      <span>Học kỳ:</span>
+                      <span>{classItem.semester}</span>
+                    </div>
+                    <div className="flex justify-between">
                       <span>Ngày tham gia:</span>
-                      <span>{classItem.createdAt}</span>
+                      <span>{new Date(classItem.createdAt).toLocaleDateString("vi-VN")}</span>
                     </div>
                     <Link href={`/classes/${classItem.id}`}>
-                      <Button size="sm" className="w-full">
+                      <Button size="sm" className="w-full mt-2">
                         <Eye className="h-4 w-4 mr-1" />
                         Vào lớp học
                       </Button>
