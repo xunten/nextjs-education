@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signIn, getSession } from "next-auth/react";
+import { toast } from "react-toastify";
 
 const schema = yup.object().shape({
   email: yup
@@ -41,48 +42,36 @@ export default function LoginPage() {
   } = useForm<FormData>({
     resolver: yupResolver(schema),
   });
+
   const onSubmit = async (data: FormData) => {
-    try {
-      const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
+    const res = await signIn("credentials", {
+      redirect: false,
+      email: data.email,
+      password: data.password,
+    });
 
-      if (result?.error) {
-        const message =
-          result.error === "CredentialsSignin"
-            ? "Email hoặc mật khẩu không đúng"
-            : result.error;
-        alert(message);
-        return;
-      }
+    if (res?.ok) {
+      toast.success("Đăng nhập thành công!");
 
-      // Đợi session được cập nhật
-      await new Promise((r) => setTimeout(r, 500));
       const session = await getSession();
 
-      const user = session?.user as
-        | { role?: "student" | "teacher"; roles?: ("student" | "teacher")[] }
-        | undefined;
+      if (session?.user) {
+        // Lưu dữ liệu vào localStorage nếu bạn cần
+        localStorage.setItem("userId", session.user.id || "");
+        localStorage.setItem("username", session.user.name || "");
+        localStorage.setItem("email", session.user.email || "");
+        localStorage.setItem("accessToken", session.user.accessToken || "");
+        localStorage.setItem("roles", JSON.stringify(session.user.roles || []));
 
-      if (user?.role) {
-        router.push(`/dashboard/${user.role}`);
-        return;
+        if (session?.user?.roles && session.user.roles.length === 1) {
+          router.push(`/dashboard/${session.user.roles[0]}`);
+        } else {
+          router.push("/select-role");
+          toast.success("Vui lòng chọn vai trò");
+        }
       }
-
-      if (user?.roles && user.roles.length === 1) {
-        router.push(`/dashboard/${user.roles[0]}`);
-        return;
-      }
-
-      router.push("/select-role");
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        alert(error.message);
-      } else {
-        alert("Đã có lỗi xảy ra");
-      }
+    } else {
+      toast.error("Mật khẩu hoặc email không chính xác");
     }
   };
 

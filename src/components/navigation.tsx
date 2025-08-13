@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
+import { authService } from "@/services/authService";
 
 export default function Navigation() {
   const { data: session, status } = useSession();
@@ -44,8 +45,8 @@ export default function Navigation() {
   const user = session.user;
 
   const handleLogout = async () => {
-    await signOut({ redirect: false });
-    router.push("/");
+    localStorage.clear();
+    await signOut({ callbackUrl: "/auth/login" });
   };
 
   const teacherNavItems = [

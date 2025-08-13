@@ -57,37 +57,32 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials.password) return null;
 
         try {
-          const res = await fetch("http://localhost:8080/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
-            }),
+          const data = await authService.login({
+            email: credentials.email,
+            password: credentials.password,
           });
 
-          const data = await res.json();
-          if (!res.ok) {
+          // Kiểm tra dữ liệu trả về
+          if (!data || (data as any).error) {
             console.error("Login API error:", data);
             return null;
           }
 
+          // Tạo user object để NextAuth lưu vào token và session
           const user: AppUser = {
-            id: data.id,
-            name: data.username || data.fullName,
+            id: data.userId.toString(),
+            name: data.username,
             email: data.email,
-            avatar: data.avatar,
+            avatar: "",
             accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
+            refreshToken: "",
             role:
-              (data.role as "teacher" | "student" | undefined) ||
-              (Array.isArray(data.roles) && data.roles.length === 1
+              data.roles.length === 1
                 ? (data.roles[0] as "teacher" | "student")
-                : undefined),
-            roles: Array.isArray(data.roles)
-              ? (data.roles as Array<"teacher" | "student">)
-              : undefined,
+                : undefined,
+            roles: data.roles as Array<"teacher" | "student">,
           };
+
           return user;
         } catch (error) {
           console.error("Login error", error);

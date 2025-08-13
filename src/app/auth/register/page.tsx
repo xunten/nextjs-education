@@ -26,13 +26,14 @@ import {
 } from "@/components/ui/select";
 import Image from "next/image";
 import { authService } from "@/services/authService";
+import { toast } from "react-toastify";
 
 const schema = yup.object({
   fullName: yup.string().required("Họ và tên là bắt buộc"),
   email: yup.string().email("Email không hợp lệ").required("Email là bắt buộc"),
   password: yup
     .string()
-    .min(6, "Mật khẩu ít nhất 6 ký tự")
+    .min(8, "Mật khẩu ít nhất 8 ký tự")
     .required("Mật khẩu là bắt buộc"),
   confirmPassword: yup
     .string()
@@ -43,10 +44,10 @@ const schema = yup.object({
   //   is: "teacher",
   //   then: (schema) => schema.required("Mã số giáo viên là bắt buộc"),
   // }),
-  subject: yup.string().when("role", {
-    is: "teacher",
-    then: (schema) => schema.required("Môn giảng dạy là bắt buộc"),
-  }),
+  // subject: yup.string().when("role", {
+  //   is: "teacher",
+  //   then: (schema) => schema.required("Môn giảng dạy là bắt buộc"),
+  // }),
 });
 
 type FormData = yup.InferType<typeof schema>;
@@ -86,11 +87,13 @@ export default function RegisterPage() {
         })
       );
       router.push("/auth/login");
+      toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
     } catch (error: unknown) {
       if (typeof error === "object" && error !== null && "message" in error) {
-        alert((error as { message: string }).message);
+        // const errorMessage = (error as { message: string }).message;
+        toast.error("Email đã được sử dụng, vui lòng thử email khác.");
       } else {
-        alert("Đăng ký thất bại");
+        toast.error("Đăng ký thất bại, vui lòng thử lại sau.");
       }
     }
   };
@@ -191,7 +194,7 @@ export default function RegisterPage() {
                     </p>
                   )}
                 </div> */}
-                <div className="space-y-1">
+                {/* <div className="space-y-1">
                   <Label>Môn giảng dạy</Label>
                   <Select onValueChange={(value) => setValue("subject", value)}>
                     <SelectTrigger>
@@ -213,7 +216,7 @@ export default function RegisterPage() {
                       {errors.subject.message}
                     </p>
                   )}
-                </div>
+                </div> */}
               </>
             )}
 
