@@ -106,7 +106,7 @@ export default function ClassDetailPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{classData.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{classData.className}</h1>
               <p className="text-gray-600">{classData.description}</p>
             </div>
           </div>

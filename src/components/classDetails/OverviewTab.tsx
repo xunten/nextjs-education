@@ -17,6 +17,11 @@ interface OverviewTabProps {
       fullName: string
       // có thể thêm email, avatar, v.v nếu cần
     }
+    subject: {
+      id: number
+      name: string
+      // có thể thêm email, avatar, v.v nếu cần
+    }
   }
   assignments: {
     id: number
@@ -113,6 +118,10 @@ export const OverviewTab: FC<OverviewTabProps> = ({ classData, assignments, docu
           <div className="flex justify-between">
             <span className="text-sm font-medium">Ngày tạo:</span>
             <span className="text-sm">{new Date(classData.createdAt).toLocaleDateString("vi-VN")}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sm font-medium">Môn học:</span>
+            <span className="text-sm">{classData.subject?.name}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm font-medium">Giáo viên:</span>
