@@ -1,0 +1,105 @@
+// services/classService.ts
+import apiClient from '@/lib/axios';
+import { ClassItem } from '@/types/classes';
+
+
+
+// Lấy danh sách lớp
+export const getClasses = async (): Promise<ClassItem[]> => {
+  const response = await apiClient.get<ClassItem[]>('/auth/classes');
+  console.log("Dữ liệu lớp học trả về từ API:", response.data);
+  return response.data;
+};
+
+
+export const getAllSubjects = async () => {
+  const response = await apiClient.get("/auth/subjects"); // Hoặc URL đúng của bạn
+  console.log("Dữ liệu môn học trả về từ API:", response.data);
+  return response.data; // Giả sử API trả về { data: [...] }
+};
+
+
+
+export const getTeacherClasses = async (teacherId: number) => {
+  const response = await apiClient.get(`/auth/classes/teacher/${teacherId}`, {
+  headers: {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  },
+});
+console.log("Dữ liệu lớp học trả về từ API:", response.data);
+  return response.data.data; // giả sử API trả về { data: [...] }
+};
+
+export const createClass = (payload: {
+  className: string;
+  schoolYear: number;
+  semester: string;
+  description: string;
+  teacherId: number;
+  subjectId: number;
+}) => {
+  console.log("Payload tạo lớp:", payload);
+  return apiClient.post(`/auth/classes`, payload);
+};
+// export const createClass = async (payload: {
+//   className: string;
+//   schoolYear: number;
+//   semester: string;
+//   description: string;
+//   teacherId: number;
+//   subjectId: number;
+// }) => {
+//   const res = await fetch(`http://localhost:8080/api/auth/classes`, {
+//     method: 'POST',
+//     headers: {
+//       'Content-Type': 'application/json',
+//     },
+//     body: JSON.stringify(payload),
+//   });
+
+//   if (!res.ok) {
+//     const errorData = await res.json().catch(() => ({}));
+//     console.error("Lỗi khi tạo lớp:", errorData);
+//     throw new Error(`HTTP error! status: ${res.status}`);
+//   }
+
+//   return res.json(); // Trả về ClassResponseDTO từ backend
+// };
+
+
+export const joinClass = async (classId: number, studentId: number) => {
+  const response = await apiClient.post("/auth/classes/add-student", {
+    classId,
+    studentId,
+  });
+  return response.data;
+};
+
+export const getStudentClasses = async (studentId: number) => {
+  const response = await apiClient.get(`/auth/classes/student/${studentId}/classesPaginated`);
+  return response.data; // <-- Lấy đúng mảng lớp học
+};
+
+// export const joinClass = async (studentId: number, code: string) => {
+//   const response = await apiClient.post(`/api/auth/student/${studentId}/join`, { code });
+//   return response.data;
+// };
+
+
+
+export const getStudentInClasses = async (classId: number) => {
+  const response = await apiClient.get(`/auth/classes/${classId}/students`);
+  return response.data; // <-- Lấy đúng mảng lớp học
+};
+
+
+
+// Lấy chi tiết 1 lớp
+export const getClassById = async (id: number): Promise<ClassItem> => {
+  const response = await apiClient.get<ClassItem>(`/auth/classes/${id}`);
+  return response.data;
+};
+
+// Tạo lớp mới
+

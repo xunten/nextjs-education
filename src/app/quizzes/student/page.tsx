@@ -1,121 +1,61 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Navigation from "@/components/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Clock, Users, CheckCircle, Play, Eye } from "lucide-react"
+import { useState, useEffect } from "react";
+import Navigation from "@/components/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Clock, Users, CheckCircle, Play, Eye } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function StudentQuizzesPage() {
-  const [user, setUser] = useState<any>(null)
-  const [quizzes] = useState([
-    {
-      id: 1,
-      title: "Kiểm tra 15 phút - Hàm số",
-      description: "Bài kiểm tra về định nghĩa và tính chất hàm số",
-      className: "Toán 12A1",
-      duration: 15,
-      totalQuestions: 10,
-      status: "active",
-      dueDate: "2024-01-25",
-    },
-    {
-      id: 2,
-      title: "Bài kiểm tra giữa kỳ",
-      description: "Kiểm tra tổng hợp các chương đã học",
-      className: "Toán 12A1",
-      duration: 45,
-      totalQuestions: 20,
-      status: "completed",
-      dueDate: "2024-01-20",
-    },
-  ])
+  const [user, setUser] = useState<any>(null);
+  const [quizzes, setQuizzes] = useState<any[]>([]);
 
-  const [activeQuiz, setActiveQuiz] = useState<any>(null)
-  const [quizAnswers, setQuizAnswers] = useState<any>({})
-  const [timeLeft, setTimeLeft] = useState(0)
-  const [isQuizStarted, setIsQuizStarted] = useState(false)
+  const [activeQuiz, setActiveQuiz] = useState<any>(null);
+  const [isQuizStarted, setIsQuizStarted] = useState(false);
 
-  // Mock quiz data for taking quiz
-  const mockQuizData = {
-    id: 1,
-    title: "Kiểm tra 15 phút - Hàm số",
-    duration: 15,
-    questions: [
-      {
-        id: 1,
-        question: "Hàm số y = 2x + 1 có tập xác định là:",
-        type: "multiple-choice",
-        options: ["R", "[0, +∞)", "(-∞, 0]", "(0, +∞)"],
-        points: 1,
-      },
-      {
-        id: 2,
-        question: "Đạo hàm của hàm số y = x² là:",
-        type: "multiple-choice",
-        options: ["2x", "x", "2", "x²"],
-        points: 1,
-      },
-      {
-        id: 3,
-        question: "Hàm số y = x³ - 3x + 1 có bao nhiêu điểm cực trị?",
-        type: "multiple-choice",
-        options: ["0", "1", "2", "3"],
-        points: 2,
-      },
-    ],
-  }
-
+  const router = useRouter();
   useEffect(() => {
-    const userData = localStorage.getItem("user")
+    const userData = localStorage.getItem("user");
     if (userData) {
-      setUser(JSON.parse(userData))
+      setUser(JSON.parse(userData));
     }
-  }, [])
+    const fetchQuizzes = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/api/quizzes"); // ⚠️ sửa lại endpoint
+        const data = await response.json();
+        console.log("data ", data);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (isQuizStarted && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((time) => {
-          if (time <= 1) {
-            setIsQuizStarted(false)
-            handleSubmitQuiz()
-            return 0
-          }
-          return time - 1
-        })
-      }, 1000)
-    }
-    return () => clearInterval(interval)
-  }, [isQuizStarted, timeLeft])
+        const quizzesForClass2 = data.filter((quiz: any) => quiz.classId === 2);
+        setQuizzes(quizzesForClass2);
+        console.log(quizzesForClass2);
+      } catch (error) {
+        console.error("Error fetching quizzes:", error);
+      }
+    };
 
-  const handleStartQuiz = (quiz: any) => {
-    setActiveQuiz(mockQuizData)
-    setTimeLeft(quiz.duration * 60) // Convert minutes to seconds
-    setIsQuizStarted(true)
-    setQuizAnswers({})
-  }
+    fetchQuizzes();
+  }, []);
 
   const handleSubmitQuiz = () => {
-    setIsQuizStarted(false)
-    setActiveQuiz(null)
-    alert("Đã nộp bài kiểm tra!")
-  }
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
-  }
+    setIsQuizStarted(false);
+    setActiveQuiz(null);
+    alert("Đã nộp bài kiểm tra!");
+  };
 
   const getStatusBadge = (status: string, dueDate: string) => {
-    const now = new Date()
-    const due = new Date(dueDate)
+    const now = new Date();
+    const due = new Date(dueDate);
 
     if (status === "completed") {
       return (
@@ -123,7 +63,7 @@ export default function StudentQuizzesPage() {
           <CheckCircle className="h-3 w-3 mr-1" />
           Hoàn thành
         </Badge>
-      )
+      );
     }
     if (due < now) {
       return (
@@ -131,77 +71,23 @@ export default function StudentQuizzesPage() {
           <Clock className="h-3 w-3 mr-1" />
           Đã đóng
         </Badge>
-      )
+      );
     }
     return (
       <Badge className="bg-blue-500">
         <Clock className="h-3 w-3 mr-1" />
         Đang mở
       </Badge>
-    )
-  }
+    );
+  };
 
   if (!user) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
-  // Quiz Taking Interface
-  if (activeQuiz && isQuizStarted) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <div className="max-w-4xl mx-auto py-6 px-4">
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h1 className="text-2xl font-bold">{activeQuiz.title}</h1>
-                <p className="text-gray-600">
-                  {activeQuiz.questions.length} câu hỏi • {activeQuiz.duration} phút
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-red-600">{formatTime(timeLeft)}</div>
-                <p className="text-sm text-gray-600">Thời gian còn lại</p>
-              </div>
-            </div>
+  // if (activeQuiz && isQuizStarted) {
 
-            <div className="space-y-8">
-              {activeQuiz.questions.map((question: any, index: number) => (
-                <Card key={question.id}>
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      Câu {index + 1}: {question.question} ({question.points} điểm)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <RadioGroup
-                      value={quizAnswers[question.id] || ""}
-                      onValueChange={(value) => setQuizAnswers({ ...quizAnswers, [question.id]: value })}
-                    >
-                      {question.options.map((option: string, optionIndex: number) => (
-                        <div key={optionIndex} className="flex items-center space-x-2">
-                          <RadioGroupItem value={option} id={`q${question.id}_${optionIndex}`} />
-                          <Label htmlFor={`q${question.id}_${optionIndex}`} className="cursor-pointer">
-                            {option}
-                          </Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            <div className="mt-8 flex justify-center">
-              <Button onClick={handleSubmitQuiz} size="lg">
-                Nộp bài
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -209,7 +95,9 @@ export default function StudentQuizzesPage() {
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Bài kiểm tra trắc nghiệm</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Bài kiểm tra trắc nghiệm
+            </h1>
             <p className="text-gray-600">Làm bài kiểm tra và xem kết quả</p>
           </div>
 
@@ -220,19 +108,26 @@ export default function StudentQuizzesPage() {
             </TabsList>
 
             <TabsContent value="available" className="space-y-4">
-              {quizzes
-                .filter((q) => q.status === "active")
-                .map((quiz) => (
+              {quizzes.map((quiz) => {
+                const totalQuestions = quiz.questions?.length || 0;
+                const status =
+                  new Date(quiz.endDate) < new Date() ? "completed" : "active";
+                const dueDate = quiz.endDate;
+
+                return (
                   <Card key={quiz.id} className="border-l-4 border-l-blue-500">
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle className="text-lg">{quiz.title}</CardTitle>
+                          <CardTitle className="text-lg">
+                            {quiz.title}
+                          </CardTitle>
                           <CardDescription className="mt-1">
-                            {quiz.className} • {quiz.duration} phút • {quiz.totalQuestions} câu hỏi
+                            Lớp {quiz.grade} • {quiz.timeLimit} phút •{" "}
+                            {totalQuestions} câu hỏi
                           </CardDescription>
                         </div>
-                        {getStatusBadge(quiz.status, quiz.dueDate)}
+                        {getStatusBadge(status, dueDate)}
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -240,20 +135,25 @@ export default function StudentQuizzesPage() {
                       <div className="flex items-center gap-4 mb-4">
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">Thời gian: {quiz.duration} phút</span>
+                          <span className="text-sm">
+                            Thời gian: {quiz.timeLimit} phút
+                          </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Users className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">Số câu: {quiz.totalQuestions}</span>
+                          <span className="text-sm">
+                            Số câu: {totalQuestions}
+                          </span>
                         </div>
                       </div>
-                      <Button onClick={() => handleStartQuiz(quiz)}>
+                      <Button onClick={() => router.push(`student/${quiz.id}`)}>
                         <Play className="h-4 w-4 mr-2" />
                         Bắt đầu làm bài
                       </Button>
                     </CardContent>
                   </Card>
-                ))}
+                );
+              })}
             </TabsContent>
 
             <TabsContent value="completed" className="space-y-4">
@@ -264,8 +164,12 @@ export default function StudentQuizzesPage() {
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle className="text-lg">{quiz.title}</CardTitle>
-                          <CardDescription className="mt-1">{quiz.className} • Đã hoàn thành</CardDescription>
+                          <CardTitle className="text-lg">
+                            {quiz.title}
+                          </CardTitle>
+                          <CardDescription className="mt-1">
+                            {quiz.className} • Đã hoàn thành
+                          </CardDescription>
                         </div>
                         <div className="flex gap-2">
                           {getStatusBadge(quiz.status, quiz.dueDate)}
@@ -292,5 +196,5 @@ export default function StudentQuizzesPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

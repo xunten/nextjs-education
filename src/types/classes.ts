@@ -1,4 +1,5 @@
 export interface ClassItem {
+  data(data: any): unknown;
   id: number;
   className: string;
   schoolYear: number;
