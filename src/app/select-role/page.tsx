@@ -1,13 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { authService } from "@/services/authService";
 
 export default function SelectRolePage() {
   const router = useRouter();
-  const { update } = useSession();
   const [loadingRole, setLoadingRole] = useState<"student" | "teacher" | null>(
     null
   );
@@ -15,17 +14,28 @@ export default function SelectRolePage() {
   const handleSelectRole = async (role: "student" | "teacher") => {
     setLoadingRole(role);
 
-    const res = await fetch("/api/auth/set-role", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ role }),
-    });
+    const userDataStr = localStorage.getItem("user");
+    if (!userDataStr) return;
 
-    if (res.ok) {
-      await update();
+    const userData = JSON.parse(userDataStr);
+
+    try {
+      // Gọi API select-role để lưu role vào DB
+      const res = await authService.selectRole({
+        userId: Number(userData.userId),
+        role: role,
+      });
+
+      // Cập nhật role vào localStorage
+      userData.roles = res.roles;
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("role", role);
+
       router.push(`/dashboard/${role}`);
-    } else {
+    } catch (err) {
+      console.error("Select role failed:", err);
+      alert("Lưu role thất bại!");
+    } finally {
       setLoadingRole(null);
     }
   };

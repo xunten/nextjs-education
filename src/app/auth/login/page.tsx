@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signIn, getSession } from "next-auth/react";
 import { toast } from "react-toastify";
+import { authService } from "@/services/authService";
+import GoogleLoginButton from "@/components/GoogleLoginButton";
 
 const schema = yup.object().shape({
   email: yup
@@ -44,34 +45,34 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: FormData) => {
-    const res = await signIn("credentials", {
-      redirect: false,
-      email: data.email,
-      password: data.password,
-    });
+    try {
+      const res = await authService.login(data);
 
-    if (res?.ok) {
-      toast.success("Đăng nhập thành công!");
+      // Lưu vào localStorage
+      localStorage.setItem("accessToken", res.accessToken);
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          userId: res.userId,
+          username: res.username,
+          email: res.email,
+          roles: res.roles,
+        })
+      );
 
-      const session = await getSession();
+      toast.success("Đăng nhập thành công");
 
-      if (session?.user) {
-        // Lưu dữ liệu vào localStorage nếu bạn cần
-        localStorage.setItem("userId", session.user.id || "");
-        localStorage.setItem("username", session.user.name || "");
-        localStorage.setItem("email", session.user.email || "");
-        localStorage.setItem("accessToken", session.user.accessToken || "");
-        localStorage.setItem("roles", JSON.stringify(session.user.roles || []));
-
-        if (session?.user?.roles && session.user.roles.length === 1) {
-          router.push(`/dashboard/${session.user.roles[0]}`);
-        } else {
-          router.push("/select-role");
-          toast.success("Vui lòng chọn vai trò");
-        }
+      if (res.roles.length === 1) {
+        const role = res.roles[0].toLowerCase();
+        router.push(`/dashboard/${role}`);
+      } else {
+        router.push("/select-role");
       }
-    } else {
-      toast.error("Mật khẩu hoặc email không chính xác");
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || "Mật khẩu hoặc email không chính xác"
+      );
+      console.error("Login error:", error);
     }
   };
 
@@ -108,10 +109,12 @@ export default function LoginPage() {
                 </p>
               )}
             </div>
-
-            <Button type="submit" className="w-full">
-              Đăng nhập
-            </Button>
+         
+              <Button type="submit"
+              className="w-full py-5 bg-green-600 hover:bg-green-700 cursor-pointer" >
+                Đăng nhập
+              </Button>
+           
           </form>
 
           <div className="mt-4 text-center text-sm">
@@ -126,12 +129,14 @@ export default function LoginPage() {
             <div className="flex-grow h-px bg-gray-300" />
           </div>
 
-          <button
+          {/* <button
             onClick={() => signIn("google", { callbackUrl: "/select-role" })}
             className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full transition"
           >
             Đăng nhập với Google
-          </button>
+          </button> */}
+
+          <GoogleLoginButton />
         </CardContent>
       </Card>
     </div>

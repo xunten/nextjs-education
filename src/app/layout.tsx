@@ -2,7 +2,6 @@ import type React from "react";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { SessionProviderWrapper } from "@/components/SessionProviderWrapper";
 import Footer from "@/components/footer/page";
 import { Bounce, ToastContainer } from "react-toastify";
 
@@ -22,7 +21,7 @@ export default function RootLayout({
     <html lang="vi">
       {/* <body className={inter.className}>{children}</body> */}
       <body className={inter.className}>
-        <SessionProviderWrapper>{children}</SessionProviderWrapper>
+        {children}
         <Footer />
         <ToastContainer
           position="bottom-right"

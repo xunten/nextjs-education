@@ -1,4 +1,3 @@
-// lib/apiClient.ts
 import axios from "axios";
 
 const apiClient = axios.create({
@@ -9,19 +8,35 @@ const apiClient = axios.create({
   timeout: 10000,
 });
 
-// Optional: Thêm interceptor nếu cần xử lý token
-
+// Interceptor gửi token
 apiClient.interceptors.request.use(
   (config) => {
-    // Ví dụ: nếu có token trong localStorage
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (token && token !== "undefined" && token !== "") {
+        config.headers.Authorization = `Bearer ${token}`;
+      } else {
+        localStorage.removeItem("token");
+      }
     }
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// Interceptor xử lý lỗi 401 (token hết hạn hoặc invalid)
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Xóa token cũ và redirect về login
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
 );
 
 export default apiClient;

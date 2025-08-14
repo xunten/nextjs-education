@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
   BookOpen,
@@ -21,10 +20,13 @@ import {
 } from "lucide-react";
 
 export default function StudentDashboard() {
-  const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Mock data for student dashboard
+  // State cho user và loading
+  const [user, setUser] = useState<{ name: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Mock data
   const [dashboardData] = useState({
     enrolledClasses: 3,
     totalAssignments: 15,
@@ -98,10 +100,23 @@ export default function StudentDashboard() {
   });
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/login");
+    const token = localStorage.getItem("accessToken");
+    const userData = localStorage.getItem("user");
+
+    if (!token || !userData) {
+      router.replace("/auth/login");
+      return;
     }
-  }, [status, router]);
+
+    try {
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      setLoading(false);
+    } catch {
+      localStorage.removeItem("user");
+      router.replace("/auth/login");
+    }
+  }, [router]);
 
   const getGradeBadge = (grade: number, maxGrade: number) => {
     const percentage = (grade / maxGrade) * 100;
@@ -114,12 +129,13 @@ export default function StudentDashboard() {
     return <Badge variant="destructive">Yếu</Badge>;
   };
 
-  if (status === "loading") {
+  if (loading) {
     return <div>Loading...</div>;
   }
 
-  const user = session?.user;
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -127,7 +143,7 @@ export default function StudentDashboard() {
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Chào mừng, {user.name}!
+            Chào mừng, {user.username}!
           </h1>
           <p className="text-gray-600">
             Theo dõi tiến độ học tập và hoàn thành bài tập
