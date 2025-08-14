@@ -1,4 +1,3 @@
-// components/GoogleLoginButton.tsx
 "use client";
 
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
@@ -17,22 +16,31 @@ export default function GoogleLoginButton() {
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
+      // Xóa toàn bộ dữ liệu cũ tránh giữ role từ lần login trước
+      localStorage.clear();
+
       const res = await authService.googleLoginWithCredential(
         credentialResponse.credential
       );
 
-      localStorage.setItem("accessToken", res.token);
+      localStorage.setItem("accessToken", res.accessToken);
       localStorage.setItem(
         "user",
         JSON.stringify({
           userId: res.userId,
           username: res.username,
           email: res.email,
+          roles: res.roles || [],
         })
       );
 
-      alert("Đăng nhập Google thành công!");
-      router.push("/select-role");
+      if (res.requireRoleSelection) {
+        router.push("/select-role");
+      } else {
+        const role = res.roles?.[0];
+        localStorage.setItem("role", role);
+        router.push(`/dashboard/${role}`);
+      }
     } catch (err) {
       console.error("Google login failed:", err);
       alert("Đăng nhập Google thất bại!");
