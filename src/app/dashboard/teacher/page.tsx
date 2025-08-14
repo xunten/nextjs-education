@@ -20,12 +20,12 @@ import {
   Calendar,
   Target,
 } from "lucide-react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function TeacherDashboard() {
-  const { data: session, status } = useSession();
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   // Mock data for teacher dashboard
   const [dashboardData] = useState({
@@ -83,17 +83,31 @@ export default function TeacherDashboard() {
   });
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/login");
-    }
-  }, [status, router]);
+    const token = localStorage.getItem("accessToken");
+    const userData = localStorage.getItem("user");
 
-  if (status === "loading") {
+    if (!token || !userData) {
+      router.replace("/auth/login");
+      return;
+    }
+
+    try {
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      setLoading(false);
+    } catch {
+      localStorage.removeItem("user");
+      router.replace("/auth/login");
+    }
+  }, [router]);
+
+  if (loading) {
     return <div>Loading...</div>;
   }
 
-  const user = session?.user;
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -102,7 +116,7 @@ export default function TeacherDashboard() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Chào mừng, {user.name}!
+            Chào mừng, {user.username}!
           </h1>
           <p className="text-gray-600">
             Tổng quan về hoạt động giảng dạy của bạn

@@ -5,6 +5,7 @@ import {
   RegisterResponseDto,
   LoginRequestDto,
   LoginResponseDto,
+  SelectRoleRequest,
 } from "../types/auth";
 
 const API_BASE = "/auth";
@@ -37,6 +38,19 @@ export const authService = {
       {
         credential,
       }
+    );
+    return response.data;
+  },
+
+  selectRole: async (data: SelectRoleRequest): Promise<LoginResponseDto> => {
+    const payload = {
+      ...data,
+      userId: Number(data.userId),
+    };
+
+    const response = await apiClient.post<LoginResponseDto>(
+      `${API_BASE}/select-role`,
+      payload
     );
     return response.data;
   },

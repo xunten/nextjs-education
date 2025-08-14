@@ -1,5 +1,3 @@
-// types/auth.ts
-
 export interface RegisterRequestDto {
   username: string;
   email: string;
@@ -25,6 +23,22 @@ export interface LoginResponseDto {
   userId: number;
   username: string;
   email: string;
-  accessToken: string;
   roles: string[];
+  accessToken: string;
+  refreshToken?: string;
+}
+
+export interface GoogleLoginRequestDto {
+  name: string;
+  email: string;
+  imageUrl: string;
+}
+
+export interface GoogleLoginWithCredentialRequestDto {
+  credential: string;
+}
+
+export interface SelectRoleRequest {
+  userId: number;
+  role: "student" | "teacher";
 }
