@@ -2,9 +2,8 @@ import type React from "react";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { SessionProviderWrapper } from "@/components/SessionProviderWrapper";
 import Footer from "@/components/footer/page";
-
+import { Bounce, ToastContainer } from "react-toastify";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,8 +21,21 @@ export default function RootLayout({
     <html lang="vi">
       {/* <body className={inter.className}>{children}</body> */}
       <body className={inter.className}>
-        <SessionProviderWrapper>{children}</SessionProviderWrapper>
+        {children}
         <Footer />
+        <ToastContainer
+          position="bottom-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick={false}
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+          transition={Bounce}
+        />
       </body>
     </html>
   );

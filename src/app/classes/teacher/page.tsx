@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import TeacherNotificationBell from "@/components/classDetails/TeacherNotificationToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,11 +32,15 @@ import {
 } from "@/components/ui/select";
 import { Users, Plus, Copy, Eye, Settings } from "lucide-react";
 import Link from "next/link";
-import { getTeacherClasses, createClass, getAllSubjects, getClasses } from "@/services/classService";
+import {
+  getTeacherClasses,
+  createClass,
+  getAllSubjects,
+} from "@/services/classService";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { get } from "http";
+import DropdownNotificationBell from "@/components/classDetails/DropdownNotificationBell";
 
 const schema = yup.object().shape({
   className: yup.string().required("Tên lớp không được để trống"),
@@ -53,6 +58,9 @@ export default function TeacherClassesPage() {
   const [user, setUser] = useState<any>(null);
   const [classes, setClasses] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize] = useState(6);
+  const [totalPages, setTotalPages] = useState(0);
 
   const {
     register,
@@ -64,23 +72,29 @@ export default function TeacherClassesPage() {
     resolver: yupResolver(schema),
   });
 
+  const loadClasses = (page: number) => {
+    // Giả định getTeacherClasses trả về dữ liệu phân trang
+    getTeacherClasses(2, page, pageSize)
+      .then((res) => {
+        setClasses(res.data);
+        setPageNumber(res.pageNumber);
+        setTotalPages(res.totalPages);
+      })
+      .catch((err) => console.error("Lỗi khi lấy lớp:", err));
+  };
+
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-      
-      // getTeacherClasses(parsedUser.id)
-      getTeacherClasses(2)
-        .then((data) => {
-          console.log("Classes data:", data);
-          setClasses(data);
-        })
-        .catch((err) => console.error("Lỗi khi lấy lớp:", err));
 
+      // Load lớp học cho giáo viên
+      loadClasses(pageNumber);
+
+      // Load danh sách môn học
       getAllSubjects()
         .then((data) => {
-          console.log("Subjects data:", data);
           setSubjects(data);
         })
         .catch((err) => console.error("Lỗi khi lấy môn học:", err));
@@ -88,17 +102,15 @@ export default function TeacherClassesPage() {
   }, []);
 
   const onSubmit = async (data: any) => {
-    console.log("Dữ liệu tạo lớp:", data);
     try {
       const payload = {
         ...data,
-        teacherId: 2,
+        teacherId: user.id, // Sử dụng ID của người dùng đã đăng nhập
       };
-      console.log("Payload tạo lớp:", payload);
-      const created = await createClass(payload);
-      // Fix: Sử dụng created.data thay vì created
-      setClasses((prev) => [...prev, created.data || created]);
-      reset();
+      await createClass(payload);
+      // Sau khi tạo xong, tải lại lớp ở trang hiện tại
+      loadClasses(pageNumber);
+      reset(); // Xóa dữ liệu trong form
     } catch (err) {
       console.error("Lỗi tạo lớp học:", err);
     }
@@ -113,47 +125,77 @@ export default function TeacherClassesPage() {
     return <div>Loading...</div>;
   }
 
-  // Đảm bảo data unique và safe
-  const uniqueSubjects = subjects?.filter((subject, index, self) => 
-    subject && subject.id && index === self.findIndex(s => s && s.id === subject.id)
-  ) || [];
+  const uniqueSubjects =
+    subjects?.filter(
+      (subject, index, self) =>
+        subject &&
+        subject.id &&
+        index === self.findIndex((s) => s && s.id === subject.id)
+    ) || [];
 
-  const uniqueClasses = classes?.filter((classItem, index, self) => 
-    classItem && classItem.id && index === self.findIndex(c => c && c.id === classItem.id)
-  ) || [];
+  const uniqueClasses =
+    classes?.filter(
+      (classItem, index, self) =>
+        classItem &&
+        classItem.id &&
+        index === self.findIndex((c) => c && c.id === classItem.id)
+    ) || [];
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Quản lý lớp học</h1>
-              <p className="text-gray-600">Tạo và quản lý các lớp học của bạn</p>
-            </div>
+return (
+  <div className="min-h-screen bg-gray-50">
+    <Navigation />
+    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className="space-y-6">
+        {/* Header + nút tạo lớp và chuông thông báo */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-green-700">
+              Quản lý lớp học
+            </h1>
+            <p className="text-gray-600">Tạo và quản lý các lớp học của bạn</p>
+          </div>
+          {/* Đặt chuông thông báo và nút tạo lớp vào cùng một khối */}
+          <div className="flex items-center gap-4">
+            <DropdownNotificationBell teacherId={2} />
+            <TeacherNotificationBell teacherId={2} />
             <Dialog>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="bg-green-700 hover:bg-green-800">
                   <Plus className="h-4 w-4 mr-2" />
                   Tạo lớp mới
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Tạo lớp học mới</DialogTitle>
-                  <DialogDescription>Nhập thông tin để tạo lớp học mới</DialogDescription>
+                  <DialogTitle className="text-green-700">
+                    Tạo lớp học mới
+                  </DialogTitle>
+                  <DialogDescription>
+                    Nhập thông tin để tạo lớp học mới
+                  </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="className">Tên lớp</Label>
                     <Input id="className" {...register("className")} />
-                    {errors.className && <p className="text-red-500 text-sm">{errors.className.message}</p>}
+                    {errors.className && (
+                      <p className="text-red-500 text-sm">
+                        {errors.className.message}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="schoolYear">Niên khóa</Label>
-                    <Input id="schoolYear" type="number" {...register("schoolYear")} />
-                    {errors.schoolYear && <p className="text-red-500 text-sm">{errors.schoolYear.message}</p>}
+                    <Input
+                      id="schoolYear"
+                      type="number"
+                      {...register("schoolYear")}
+                    />
+                    {errors.schoolYear && (
+                      <p className="text-red-500 text-sm">
+                        {errors.schoolYear.message}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label>Học kỳ</Label>
@@ -166,7 +208,11 @@ export default function TeacherClassesPage() {
                         <SelectItem value="Học kỳ 2">Học kỳ 2</SelectItem>
                       </SelectContent>
                     </Select>
-                    {errors.semester && <p className="text-red-500 text-sm">{errors.semester.message}</p>}
+                    {errors.semester && (
+                      <p className="text-red-500 text-sm">
+                        {errors.semester.message}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="description">Mô tả</Label>
@@ -174,13 +220,15 @@ export default function TeacherClassesPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Môn học</Label>
-                    <Select onValueChange={(val) => setValue("subjectId", Number(val))}>
+                    <Select
+                      onValueChange={(val) => setValue("subjectId", Number(val))}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Chọn môn học" />
                       </SelectTrigger>
                       <SelectContent>
                         {uniqueSubjects.map((subject, index) => (
-                          <SelectItem 
+                          <SelectItem
                             key={`subject-${subject.id}-${index}`}
                             value={subject.id.toString()}
                           >
@@ -189,67 +237,108 @@ export default function TeacherClassesPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.subjectId && <p className="text-red-500 text-sm">{errors.subjectId.message}</p>}
+                    {errors.subjectId && (
+                      <p className="text-red-500 text-sm">
+                        {errors.subjectId.message}
+                      </p>
+                    )}
                   </div>
-                  <Button type="submit" className="w-full">Tạo lớp</Button>
+                  <Button
+                    type="submit"
+                    className="w-full bg-green-700 hover:bg-green-800"
+                  >
+                    Tạo lớp
+                  </Button>
                 </form>
               </DialogContent>
             </Dialog>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {uniqueClasses.map((classItem, index) => (
-              <Card 
-                key={`class-${classItem.id}-${index}`}
-                className="hover:shadow-lg transition-shadow"
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{classItem.className}</CardTitle>
-                      <CardDescription className="mt-1">
-                        {classItem.description}
-                      </CardDescription>
-                    </div>
-                    <Badge variant="secondary">
-                      <Users className="h-3 w-3 mr-1" />
-                      {classItem.studentCount ?? 0}
-                    </Badge>
+        {/* Danh sách lớp */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {uniqueClasses.map((classItem, index) => (
+            <Card
+              key={`class-${classItem.id}-${index}`}
+              className="hover:shadow-lg transition-shadow"
+            >
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg text-green-700">
+                      {classItem.className}
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      {classItem.description}
+                    </CardDescription>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm font-mono">{classItem.id}</span>
+                  <Badge variant="secondary">
+                    <Users className="h-3 w-3 mr-1" />
+                    {classItem.studentCount ?? 0}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <span className="text-sm font-mono">{classItem.id}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copyClassCode(classItem.id.toString())}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Tạo ngày:{" "}
+                    {new Date(classItem.createdAt).toLocaleDateString("vi-VN")}
+                  </div>
+                  <div className="flex gap-2">
+                    <Link href={`/classes/${classItem.id}`} className="flex-1">
                       <Button
                         size="sm"
-                        variant="ghost"
-                        onClick={() => copyClassCode(classItem.id.toString())}
+                        className="w-full bg-green-700 hover:bg-green-800 text-white"
                       >
-                        <Copy className="h-4 w-4" />
+                        <Eye className="h-4 w-4 mr-1" />
+                        Xem lớp
                       </Button>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Tạo ngày: {new Date(classItem.createdAt).toLocaleDateString("vi-VN")}
-                    </div>
-                    <div className="flex gap-2">
-                      <Link href={`/classes/${classItem.id}`} className="flex-1">
-                        <Button size="sm" variant="outline" className="w-full bg-transparent">
-                          <Eye className="h-4 w-4 mr-1" />
-                          Xem lớp
-                        </Button>
-                      </Link>
-                      <Button size="sm" variant="outline">
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    </Link>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-green-700 text-green-700 hover:bg-green-50"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Nút phân trang dạng số */}
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-6">
+            {Array.from({ length: totalPages }, (_, i) => i).map((num) => (
+              <Button
+                key={num}
+                variant={num === pageNumber ? "default" : "outline"}
+                onClick={() => loadClasses(num)}
+                className={
+                  num === pageNumber
+                    ? "bg-green-700 hover:bg-green-800 text-white"
+                    : "border-green-700 text-green-700 hover:bg-green-50"
+                }
+              >
+                {num + 1}
+              </Button>
             ))}
           </div>
-        </div>
+        )}
       </div>
     </div>
-  );
+  </div>
+);
 }

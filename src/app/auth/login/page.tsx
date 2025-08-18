@@ -16,7 +16,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signIn } from "next-auth/react";
+import { toast } from "react-toastify";
+import { authService } from "@/services/authService";
+import GoogleLoginButton from "@/components/GoogleLoginButton";
+
 const schema = yup.object().shape({
   email: yup
     .string()
@@ -41,19 +44,36 @@ export default function LoginPage() {
     resolver: yupResolver(schema),
   });
 
-  const onSubmit = (data: FormData) => {
-    const mockUser = {
-      id: 1,
-      email: data.email,
-      fullName: "Người dùng Demo",
-      role: data.email.includes("teacher") ? "teacher" : "student",
-    };
-    localStorage.setItem("user", JSON.stringify(mockUser));
-    // Redirect based on role
-    const redirectPath =
-      mockUser.role === "teacher" ? "/dashboard/teacher" : "/dashboard/student";
+  const onSubmit = async (data: FormData) => {
+    try {
+      const res = await authService.login(data);
 
-    router.push(redirectPath);
+      // Lưu vào localStorage
+      localStorage.setItem("accessToken", res.accessToken);
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          userId: res.userId,
+          username: res.username,
+          email: res.email,
+          roles: res.roles,
+        })
+      );
+
+      toast.success("Đăng nhập thành công");
+
+      if (res.roles.length === 1) {
+        const role = res.roles[0].toLowerCase();
+        router.push(`/dashboard/${role}`);
+      } else {
+        router.push("/select-role");
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || "Mật khẩu hoặc email không chính xác"
+      );
+      console.error("Login error:", error);
+    }
   };
 
   return (
@@ -89,10 +109,12 @@ export default function LoginPage() {
                 </p>
               )}
             </div>
-
-            <Button type="submit" className="w-full">
-              Đăng nhập
-            </Button>
+         
+              <Button type="submit"
+              className="w-full py-5 bg-green-600 hover:bg-green-700 cursor-pointer" >
+                Đăng nhập
+              </Button>
+           
           </form>
 
           <div className="mt-4 text-center text-sm">
@@ -107,16 +129,14 @@ export default function LoginPage() {
             <div className="flex-grow h-px bg-gray-300" />
           </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              signIn("google", { callbackUrl: "/api/auth/select-role" })
-            }
-            className="w-full"
+          {/* <button
+            onClick={() => signIn("google", { callbackUrl: "/select-role" })}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full transition"
           >
             Đăng nhập với Google
-          </Button>
+          </button> */}
+
+          <GoogleLoginButton />
         </CardContent>
       </Card>
     </div>

@@ -2,15 +2,41 @@
 import apiClient from '@/lib/axios';
 import { ClassItem } from '@/types/classes';
 
-
-
+export interface ClassJoinRequest {
+  requestId: number;
+  classId: number;
+  studentId: number;
+  className: string;
+  studentName: string;
+  status: string;
+  // Thêm các trường khác nếu cần
+}
+export interface JoinRequestDTO {
+  requestId: number;
+  classId: number;
+  className: string;
+  studentId: number;
+  studentName: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  reason?: string; // nếu có reject reason
+}
 // Lấy danh sách lớp
 export const getClasses = async (): Promise<ClassItem[]> => {
   const response = await apiClient.get<ClassItem[]>('/auth/classes');
   console.log("Dữ liệu lớp học trả về từ API:", response.data);
   return response.data;
 };
+export const searchClasses = async (query: string) => {
+  const res = await apiClient.get(`/auth/classes/search`, {
+    params: { q: query }
+  });
+  return res.data;
+};
 
+export const getSuggestedClasses = async () => {
+  const res = await apiClient.get(`/auth/classes/suggested`);
+  return res.data;
+};
 
 export const getAllSubjects = async () => {
   const response = await apiClient.get("/auth/subjects"); // Hoặc URL đúng của bạn
@@ -20,17 +46,26 @@ export const getAllSubjects = async () => {
 
 
 
-export const getTeacherClasses = async (teacherId: number) => {
-  const response = await apiClient.get(`/auth/classes/teacher/${teacherId}`, {
+// export const getTeacherClasses = async (teacherId: number) => {
+//   const response = await apiClient.get(`/auth/classes/teacher/${teacherId}`, {
+//   headers: {
+//     "Content-Type": "application/json",
+//     "Accept": "application/json",
+//   },
+// });
+// console.log("Dữ liệu lớp học trả về từ API:", response.data);
+//   return response.data.data; // giả sử API trả về { data: [...] }
+// };
+export const getTeacherClasses = async (teacherId: number, page: number, size: number) => {
+  const response = await apiClient.get(`/auth/classes/teacher/${teacherId}?page=${page}&size=${size}`, {
   headers: {
     "Content-Type": "application/json",
     "Accept": "application/json",
   },
 });
 console.log("Dữ liệu lớp học trả về từ API:", response.data);
-  return response.data.data; // giả sử API trả về { data: [...] }
+  return response.data; // giả sử API trả về { data: [...] }
 };
-
 export const createClass = (payload: {
   className: string;
   schoolYear: number;
@@ -75,18 +110,24 @@ export const joinClass = async (classId: number, studentId: number) => {
   });
   return response.data;
 };
-
-export const getStudentClasses = async (studentId: number) => {
-  const response = await apiClient.get(`/auth/classes/student/${studentId}/classesPaginated`);
+export async function createJoinRequest(classId: number, studentId: number) {
+  const response = await apiClient.post(`/classes/${classId}/join-request`, {
+    studentId,
+  });
+  return response.data;
+}
+// export const getStudentClasses = async (studentId: number) => {
+//   const response = await apiClient.get(`/auth/classes/student/${studentId}/classesPaginated`);
+//   return response.data; // <-- Lấy đúng mảng lớp học
+// };
+export const getStudentClasses = async (studentId: number, page: number, size: number) => {
+  const response = await apiClient.get(`/auth/classes/student/${studentId}/classesPaginated?page=${page}&size=${size}`);
   return response.data; // <-- Lấy đúng mảng lớp học
 };
-
 // export const joinClass = async (studentId: number, code: string) => {
 //   const response = await apiClient.post(`/api/auth/student/${studentId}/join`, { code });
 //   return response.data;
 // };
-
-
 
 export const getStudentInClasses = async (classId: number) => {
   const response = await apiClient.get(`/auth/classes/${classId}/students`);
@@ -103,3 +144,52 @@ export const getClassById = async (id: number): Promise<ClassItem> => {
 
 // Tạo lớp mới
 
+
+// export async function getJoinRequests(
+//   classId: number,
+//   status?: string
+// ): Promise<ClassJoinRequest[]> {
+//   const params = status ? { status } : {};
+
+//   const res = await apiClient.get<ClassJoinRequest[]>(`/classes/${classId}/join-requests`, {
+//     params,
+//     // headers: { Authorization: "Bearer token..." }
+//   });
+
+//   return res.data;
+// }
+
+export async function getJoinRequests(
+  teacherId: number,
+  status?: string
+): Promise<ClassJoinRequest[]> {
+  const params = status ? { status } : {};
+
+  const res = await apiClient.get<ClassJoinRequest[]>(`/classes/join-requests?teacherId=${teacherId}`, {
+    params,
+    // headers: { Authorization: "Bearer token..." }
+  });
+
+  return res.data;
+}
+
+
+
+// Approve request
+export const approveJoinRequest = async (requestId: number): Promise<JoinRequestDTO> => {
+  console.log("check requesrId", requestId)
+  const response = await apiClient.post<JoinRequestDTO>(`/classes/join-requests/${requestId}/approve`);
+  return response.data;
+};
+
+// Reject request
+export const rejectJoinRequest = async (
+  requestId: number,
+  reason?: string
+): Promise<JoinRequestDTO> => {
+  const response = await apiClient.post<JoinRequestDTO>(
+    `/classes/join-requests/${requestId}/reject`,
+    reason || null
+  );
+  return response.data;
+};
