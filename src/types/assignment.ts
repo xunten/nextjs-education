@@ -2,33 +2,42 @@ export interface Assignment {
   id: number
   title: string
   description: string
-  className: string
+  classId: number
   dueDate: string
-  status: "pending" | "submitted" | "graded"
-  grade?: number | null
-  feedback?: string | null
-  gradedAt?: string | null
-  submittedAt?: string | null
-  fileName?: string | null
-  submissions?: number
-  totalStudents?: number
+  max_score: number
+  file_path?: string | null
+  file_type?: string | null
 }
 
+// types/submission.ts
+
+export type SubmissionStatus = 'SUBMITTED' | 'GRADED' | 'LATE' | 'MISSING';
+
 export interface Submission {
-  id: number
-  assignmentId: number
-  studentId: number
-  studentName: string
-  studentEmail: string
-  submittedAt: string
-  fileName: string
-  fileSize: string
-  status: "submitted" | "graded"
-  grade?: number | null
-  feedback?: string
-  gradedAt?: string | null
-  gradedBy?: string | null
+  id: number;
+  assignment: {
+    id: number;
+    title: string;
+    description?: string;
+    dueDate: string; // ISO Date string
+    maxScore: number;
+    // Có thể thêm các field khác nếu API trả về
+  };
+  student: {
+    id: number;
+    fullName: string;
+    email?: string;
+    // Có thể thêm các field khác nếu API trả về
+  };
+  submittedAt: string; // ISO Date string
+  filePath: string;
+  fileType: string;
+  status: SubmissionStatus;
+  score?: number;
+  gradedAt?: string; // ISO Date string
+  teacherComment?: string;
 }
+
 
 export interface Comment {
   id: number

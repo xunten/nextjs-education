@@ -10,6 +10,10 @@ import { ArrowLeft } from "lucide-react"
 import { StudentsTab } from "@/components/classDetails/StudentsTab"
 import { OverviewTab } from "@/components/classDetails/OverviewTab"
 import { getClassById, getStudentInClasses } from "@/services/classService"
+import { AssignmentsTab } from "@/components/classDetails/AssignmentsTab"
+import { getAssignmentsByClassId } from "@/services/assignmentService"
+import { getDocumentsByClassId } from "@/services/documentService"
+import { DocumentsTab } from "@/components/classDetails/DocumentsTab"
 
 export default function ClassDetailPage() {
   const params = useParams()
@@ -60,17 +64,28 @@ export default function ClassDetailPage() {
         // setClassData(classRes.data)
         // setStudents(studentsRes.data)
 
+        getAssignmentsByClassId(classId)
+         .then((data) => {
+           console.log("Assignments data:", data);
+           setAssignments(data)
+         })
         // Dữ liệu mẫu
-        setAssignments([
-          { id: 101, status: "active" },
-          { id: 102, status: "closed" },
-          { id: 103, status: "active" },
-        ])
+        // setAssignments([
+        //   { id: 101, status: "active" },
+        //   { id: 102, status: "closed" },
+        //   { id: 103, status: "active" },
+        // ])
 
-        setDocuments([
-          { id: 1, title: "Tài liệu giải tích" },
-          { id: 2, title: "Đề thi giữa kỳ" },
-        ])
+        getDocumentsByClassId(classId)
+         .then((data) => {
+           console.log("Documents data:", data);
+           setDocuments(data)
+         })
+
+        // setDocuments([
+        //   { id: 1, title: "Tài liệu giải tích" },
+        //   { id: 2, title: "Đề thi giữa kỳ" },
+        // ])
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu lớp học:", error)
       }
@@ -137,11 +152,12 @@ export default function ClassDetailPage() {
           </TabsContent>
 
           <TabsContent value="assignments">
-            <div className="text-gray-600">Chức năng bài tập sẽ được cập nhật sau...</div>
+            <AssignmentsTab assignments={assignments} classData={classData} />
+            {/* <div className="text-gray-600">Chức năng bài tập sẽ được cập nhật sau...</div> */}
           </TabsContent>
 
           <TabsContent value="documents">
-            <div className="text-gray-600">Tài liệu lớp học sẽ được cập nhật sau...</div>
+            <DocumentsTab documents={documents} classData={classData} />
           </TabsContent>
         </Tabs>
       </div>
