@@ -23,33 +23,29 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { NavigationSkeleton } from "@/app/quizzes/components/NavigationSkeleton";
 
 export default function Navigation() {
-  const [user, setUser] = useState<any>(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  useEffect(() => {
-    const role = localStorage.getItem("role");
-    const userData = localStorage.getItem("user");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
-    if (role && userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser({ ...parsedUser, role });
+  // Lấy user từ localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    } else {
+      router.push("/auth/login");
     }
-  }, []);
+  }, [router]);
+
+  if (!user) return null; // hoặc loading UI
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("role");
-    router.push("/");
+    localStorage.clear();
+    router.push("/auth/login");
   };
-console.log("User data:", user);
-  if (!user) {
-
-    return <NavigationSkeleton />;
-  }
 
   const teacherNavItems = [
     { href: "/dashboard/teacher", label: "Trang chủ", icon: Home },
@@ -66,7 +62,14 @@ console.log("User data:", user);
     { href: "/schedule/student", label: "Thời khóa biểu", icon: Calendar },
   ];
 
-  const navItems = user.role === "teacher" ? teacherNavItems : studentNavItems;
+  // const navItems = user.roles?.includes("teacher")
+  //   ? teacherNavItems
+  //   : studentNavItems;
+
+  const currentRole = localStorage.getItem("role");
+
+  const navItems =
+    currentRole === "teacher" ? teacherNavItems : studentNavItems;
 
   return (
     <nav className="bg-white shadow-sm border-b whitespace-nowrap">
@@ -74,19 +77,14 @@ console.log("User data:", user);
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link href="/dashboard" className="flex-shrink-0 flex items-center">
-              <Image
-                src="/images/logo.png"
-                alt="Logo"
-                width={40}
-                height={40}
-                className=""
-              />
+              <Image src="/images/logo.png" alt="Logo" width={40} height={40} />
               <span className="ml-2 text-xl font-bold text-gray-900">
                 EduSystem
               </span>
             </Link>
           </div>
 
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -96,7 +94,7 @@ console.log("User data:", user);
                   href={item.href}
                   className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     pathname === item.href
-                      ? "text-hover:text-green-600 bg-blue-50"
+                      ? "text-green-600 bg-blue-50"
                       : "text-gray-700 hover:text-green-600 hover:bg-gray-50"
                   }`}
                 >
@@ -116,22 +114,24 @@ console.log("User data:", user);
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarFallback>
-                      {user.fullName?.charAt(0) || "U"}
+                      {user.username?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end">
-                <div className="flex items-center justify-start gap-2 p-2">
-                  <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium">{user.fullName}</p>
-                    <p className="w-[200px] truncate text-sm text-muted-foreground">
-                      {user.email}
-                    </p>
-                    <p className="text-xs text-green-600">
-                      {user.role === "teacher" ? "Giáo viên" : "Học sinh"}
-                    </p>
-                  </div>
+                <div className="flex flex-col gap-1 p-2">
+                  <p className="font-medium">{user.username}</p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {user.email}
+                  </p>
+                  {/* <p className="text-xs text-green-600">
+                    {user.roles?.includes("teacher") ? "Giáo viên" : "Học sinh"}
+                  </p> */}
+
+                  <p className="text-xs text-green-600">
+                    {currentRole === "teacher" ? "Giáo viên" : "Học sinh"}
+                  </p>
                 </div>
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -140,21 +140,19 @@ console.log("User data:", user);
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Mobile menu button */}
             <Button
               variant="ghost"
               className="md:hidden ml-2"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
-              {isMobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              {isMobileMenuOpen ? <X /> : <Menu />}
             </Button>
           </div>
         </div>
       </div>
 
+      {/* Mobile Navigation */}
       {isMobileMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-50">

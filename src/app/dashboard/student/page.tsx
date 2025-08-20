@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Navigation from "@/components/navigation";
@@ -19,38 +18,32 @@ import {
   Target,
 } from "lucide-react";
 
+import { StudentDashboardResponse } from "@/types/dashboard";
+import { fetchStudentDashboard } from "@/services/dashboardService";
+
 export default function StudentDashboard() {
   const router = useRouter();
 
-  // State cho user và loading
-  const [user, setUser] = useState<{ name: string } | null>(null);
+  const [user, setUser] = useState<{ username: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Mock data
-  const [dashboardData] = useState({
-    enrolledClasses: 3,
-    totalAssignments: 15,
-    completedAssignments: 12,
-    pendingAssignments: 3,
+  // Dashboard state (kết hợp API + mock)
+  const [dashboardData, setDashboardData] = useState<{
+    enrolledClasses: number;
+    totalAssignments: number;
+    completedAssignments: number;
+    pendingAssignments: number;
+    averageGrade: number;
+    upcomingDeadlines: any[];
+    recentGrades: any[];
+    classProgress: any[];
+  }>({
+    enrolledClasses: 0,
+    totalAssignments: 0,
+    completedAssignments: 0,
+    pendingAssignments: 0,
     averageGrade: 8.5,
-    upcomingDeadlines: [
-      {
-        id: 1,
-        title: "Bài tập Chương 4 - Hàm số",
-        class: "Toán 12A1",
-        dueDate: "2024-01-28",
-        timeLeft: "3 ngày",
-        status: "pending",
-      },
-      {
-        id: 2,
-        title: "Kiểm tra giữa kỳ",
-        class: "Vật lý 12A1",
-        dueDate: "2024-01-30",
-        timeLeft: "5 ngày",
-        status: "pending",
-      },
-    ],
+    upcomingDeadlines: [],
     recentGrades: [
       {
         id: 1,
@@ -77,32 +70,12 @@ export default function StudentDashboard() {
         date: "2024-01-15",
       },
     ],
-    classProgress: [
-      {
-        class: "Toán 12A1",
-        completed: 5,
-        total: 6,
-        average: 8.8,
-      },
-      {
-        class: "Vật lý 12A1",
-        completed: 4,
-        total: 5,
-        average: 8.2,
-      },
-      {
-        class: "Hóa 12A1",
-        completed: 3,
-        total: 4,
-        average: 8.5,
-      },
-    ],
+    classProgress: [],
   });
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     const userData = localStorage.getItem("user");
-
     if (!token || !userData) {
       router.replace("/auth/login");
       return;
@@ -111,7 +84,25 @@ export default function StudentDashboard() {
     try {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-      setLoading(false);
+
+      // fetch API
+      fetchStudentDashboard()
+        .then((data: StudentDashboardResponse) => {
+          setDashboardData((prev) => ({
+            ...prev,
+            enrolledClasses: data.enrolledClasses,
+            totalAssignments: data.totalAssignments,
+            completedAssignments: data.completedAssignments,
+            upcomingDeadlines: data.upcomingDeadlines,
+            pendingAssignments:
+              data.totalAssignments - data.completedAssignments,
+            classProgress: data.classProgress,
+          }));
+        })
+        .catch(() => {
+          console.error("Không thể load dashboard student");
+        })
+        .finally(() => setLoading(false));
     } catch {
       localStorage.removeItem("user");
       router.replace("/auth/login");
@@ -129,13 +120,8 @@ export default function StudentDashboard() {
     return <Badge variant="destructive">Yếu</Badge>;
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
-    return null;
-  }
+  if (loading) return <div>Loading...</div>;
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -268,11 +254,11 @@ export default function StudentDashboard() {
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <h4 className="font-medium">{deadline.title}</h4>
-                        <Badge variant="outline">{deadline.class}</Badge>
+                        <Badge variant="outline">{deadline.className}</Badge>
                       </div>
                       <div className="text-right">
                         <span className="text-sm font-medium text-orange-600">
-                          {deadline.timeLeft}
+                          {deadline.daysLeft}
                         </span>
                         <p className="text-xs text-muted-foreground">
                           {deadline.dueDate}
@@ -398,10 +384,7 @@ export default function StudentDashboard() {
                 {dashboardData.classProgress.map((classItem, index) => (
                   <div key={index} className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="font-medium">{classItem.class}</span>
-                      <span className="text-sm font-medium">
-                        {classItem.average}
-                      </span>
+                      <span className="font-medium">{classItem.className}</span>
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs text-muted-foreground">
@@ -460,33 +443,6 @@ export default function StudentDashboard() {
                       Cải thiện +0.3 điểm
                     </p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Thống kê nhanh</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm">Bài tập tuần này</span>
-                  <span className="font-medium">3</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Điểm cao nhất</span>
-                  <span className="font-medium text-green-600">9.5</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Lớp đang học</span>
-                  <span className="font-medium">
-                    {dashboardData.enrolledClasses}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Ngày học liên tiếp</span>
-                  <span className="font-medium">15</span>
                 </div>
               </CardContent>
             </Card>
