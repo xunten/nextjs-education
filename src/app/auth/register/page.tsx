@@ -70,7 +70,7 @@ export default function RegisterPage() {
   const onSubmit = async (data: FormData) => {
     try {
       const response = await authService.register({
-        username: data.email,
+        username: data.email.split("@")[0],
         email: data.email,
         password: data.password,
         fullName: data.fullName,
@@ -84,6 +84,9 @@ export default function RegisterPage() {
           userId: response.userId,
           username: response.username,
           email: response.email,
+          roles: [data.role],
+          fullName: data.fullName,
+          imageUrl: "",
         })
       );
       router.push("/auth/login");

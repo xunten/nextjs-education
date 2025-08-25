@@ -23,6 +23,8 @@ export interface LoginResponseDto {
   userId: number;
   username: string;
   email: string;
+  fullName: string;
+  imageUrl?: string;
   roles: string[];
   accessToken: string;
   refreshToken?: string;
