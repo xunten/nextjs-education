@@ -1,12 +1,15 @@
+import { LoginResponseDto } from "./auth"
+
 export interface Assignment {
   id: number
   title: string
   description: string
   classId: number
   dueDate: string
-  max_score: number
-  file_path?: string | null
-  file_type?: string | null
+  maxScore: number
+  filePath?: string | null
+  fileType?: string | null
+  fileSize?: number | null
 }
 
 // types/submission.ts
@@ -15,27 +18,23 @@ export type SubmissionStatus = 'SUBMITTED' | 'GRADED' | 'LATE' | 'MISSING';
 
 export interface Submission {
   id: number;
-  assignment: {
-    id: number;
-    title: string;
-    description?: string;
-    dueDate: string; // ISO Date string
-    maxScore: number;
-    // Có thể thêm các field khác nếu API trả về
-  };
+  assignmentId: number;
+  submittedAt: string;
+  filePath: string;
+  fileType: string;
+  fileSize?: number | null
+  description?: string;
+  status: SubmissionStatus;
+  score?: number;
+  gradedAt?: string;
+  teacherComment?: string;
+
   student: {
     id: number;
     fullName: string;
-    email?: string;
-    // Có thể thêm các field khác nếu API trả về
+    email: string;
+    imageUrl?: string | null;
   };
-  submittedAt: string; // ISO Date string
-  filePath: string;
-  fileType: string;
-  status: SubmissionStatus;
-  score?: number;
-  gradedAt?: string; // ISO Date string
-  teacherComment?: string;
 }
 
 

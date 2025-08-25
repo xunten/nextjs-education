@@ -5,6 +5,7 @@ import "./globals.css";
 import Footer from "@/components/footer/page";
 import Providers from "./providers";
 import { Bounce, ToastContainer } from "react-toastify";
+import 'sweetalert2/dist/sweetalert2.js'
 
 const inter = Inter({ subsets: ["latin"] });
 

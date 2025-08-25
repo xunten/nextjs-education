@@ -189,7 +189,7 @@ export const DocumentsTab = ({ documents, classData }: DocumentTabProps) => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Tài liệu lớp học</h3>
-                {role === "teacher" && (
+                {role === "TEACHER" && (
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
                             <Button>
@@ -202,7 +202,7 @@ export const DocumentsTab = ({ documents, classData }: DocumentTabProps) => {
                                 <DialogTitle>Tải lên tài liệu cho {classes[0]?.className}</DialogTitle>
                                 <DialogDescription>Chọn tệp tài liệu để chia sẻ với học sinh</DialogDescription>
                             </DialogHeader>
-                            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                            <form onSubmit={handleSubmit(onSubmit)}>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="title">Tên tài liệu</Label>
