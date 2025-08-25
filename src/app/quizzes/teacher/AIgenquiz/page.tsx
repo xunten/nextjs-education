@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, ChangeEvent, useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -22,33 +21,27 @@ import { Leaf, Sparkles } from "lucide-react";
 import { useQuizStore } from "@/lib/store/quizStore";
 import { useQuizzStorage } from "@/lib/store/useQuizzStorage";
 import { useTour } from "@reactour/tour";
-
+import { useTeacherClasses } from "../../hook/useTeacherClasses";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 export default function HomePage() {
   const { setIsOpen } = useTour();
   const { isGenerating } = useQuizStore();
   const { data, setData } = useQuizzStorage();
   const { reset } = useQuizzStorage();
-  useEffect(() => {
-    reset(); // xóa tất cả, kể cả questions
-    const userId = Number(localStorage.getItem("user_id")) || 2; // fallback nếu chưa có login
-    const classId = Number(localStorage.getItem("class_id")) || 2;
+  const userStr =
+    typeof window !== "undefined" ? localStorage.getItem("user") : null;
+  const userId = userStr ? JSON.parse(userStr).userId : null;
 
-    setData({
-      classId,
-      createdBy: userId,
-    });
-  }, []);
-  useEffect(() => {
-    if (setIsOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+  const { data: classes = [], isLoading } = useTeacherClasses(userId);
 
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [setIsOpen]);
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -105,43 +98,48 @@ export default function HomePage() {
                   <Input
                     id="title"
                     name="title"
-                    placeholder="Ví dụ: Đề kiểm tra giữa kỳ Toán 10"
-                    value={data.title}
-                    onChange={handleChange}
+                    value={data.title || ""}
+                    onChange={(e) => setData({ title: e.target.value })}
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label
-                      className="text-sm font-medium text-muted-foreground"
-                      htmlFor="grade"
-                    >
-                      Khối lớp
-                    </label>
-                    <Input
-                      id="grade"
-                      name="grade"
-                      placeholder="VD: 10"
-                      value={data.grade}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label
-                      className="text-sm font-medium text-muted-foreground"
-                      htmlFor="subject"
-                    >
-                      Môn học
-                    </label>
-                    <Input
-                      id="subject"
-                      name="subject"
-                      placeholder="VD: Toán"
-                      value={data.subject}
-                      onChange={handleChange}
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <Label htmlFor="classId">Khối lớp</Label>
+                  <Select
+                    value={data.classId?.toString() || ""}
+                    onValueChange={(val) => {
+                      const selected = classes.find(
+                        (c) => c.id.toString() === val
+                      );
+                      const userStr = localStorage.getItem("user");
+                      const userId = userStr
+                        ? JSON.parse(userStr).userId
+                        : null;
+
+                      if (selected) {
+                        setData({
+                          classId: selected.id,
+                          subject: selected.subject?.name || "",
+                          createdBy: userId,
+                        });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn lớp học" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classes.map((cls) => (
+                        <SelectItem key={cls.id} value={cls.id.toString()}>
+                          {cls.className}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1 w-full">
+                  <Label>Môn học</Label>
+                  <Input value={data.subject || ""} disabled />
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
@@ -180,16 +178,16 @@ export default function HomePage() {
                   <div className="space-y-1">
                     <label
                       className="text-sm font-medium text-muted-foreground"
-                      htmlFor="time"
+                      htmlFor="timeLimit"
                     >
                       Thời gian (phút)
                     </label>
                     <Input
-                      id="time"
+                      id="timeLimit"
                       type="number"
-                      name="time"
+                      name="timeLimit"
+                      value={data.timeLimit || ""}
                       placeholder="VD: 45"
-                      value={data.time}
                       onChange={handleChange}
                     />
                   </div>

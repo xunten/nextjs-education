@@ -1,4 +1,7 @@
-export async function apiClient<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function apiClient<T>(
+    path: string,
+    options: RequestInit = {}
+): Promise<T> {
     const token = localStorage.getItem("accessToken");
     const headers = {
         "Content-Type": "application/json",
@@ -11,7 +14,6 @@ export async function apiClient<T>(path: string, options: RequestInit = {}): Pro
         headers,
         credentials: "include",
     });
-    console.log(res);
 
     if (!res.ok) {
         throw new Error(await res.text());

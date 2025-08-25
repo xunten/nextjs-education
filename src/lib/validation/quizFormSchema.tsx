@@ -2,12 +2,8 @@ import * as yup from "yup";
 
 export const quizFormSchema = yup.object().shape({
   title: yup.string().required("Vui lòng nhập tiêu đề"),
-  grade: yup
-    .string()
-    .matches(/^[0-9]{1,2}$/, "Khối lớp phải là số (vd: 10, 11...)")
-    .required("Vui lòng nhập khối lớp"),
   subject: yup.string().required("Vui lòng chọn môn học"),
-  time: yup
+  timeLimit: yup
     .number()
     .typeError("Thời gian phải là số")
     .positive("Thời gian phải lớn hơn 0")

@@ -20,7 +20,6 @@ export function buildQueryString(filters: QuizFilters) {
     return s ? `?${s}` : "";
 }
 
-// mapper server → QuizCard
 export function toQuizCard(quiz: any): QuizCard {
     return {
         id: quiz.id,

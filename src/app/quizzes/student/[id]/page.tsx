@@ -57,8 +57,6 @@ export default function QuizPage() {
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        // hoặc chỗ bạn lưu token
-
         const res = await fetch(`http://localhost:8080/api/quizzes/${id}`, {
           method: "GET",
           headers: {
@@ -72,7 +70,6 @@ export default function QuizPage() {
         }
 
         const data = await res.json();
-        console.log(data);
 
         setQuiz(data);
 
@@ -133,22 +130,6 @@ export default function QuizPage() {
     }));
   };
 
-  const handleQuestionNavigation = (index: number) => {
-    setCurrentQuestion(index);
-  };
-
-  const handlePrevQuestion = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
-    }
-  };
-
-  const handleNextQuestion = () => {
-    if (quiz && currentQuestion < quiz.questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    }
-  };
-
   const calculateProgress = () => {
     if (!quiz) return 0;
 
@@ -161,22 +142,12 @@ export default function QuizPage() {
 
   const handleSubmit = useCallback(async () => {
     if (!startTime || isSubmitting) return;
-
-    // 1. Lấy token đúng lúc submit (tránh đọc ở top-level)
     const token = localStorage.getItem("accessToken");
-
-    // 2. Validate: phải có quiz và có câu hỏi
     if (!quiz || !quiz.questions?.length) return;
-
-    // 3. Gom đáp án từ state (Record<questionId, optionLabel>)
-    //    Chỉ gửi những câu đã chọn; hoặc nếu backend yêu cầu đủ
-    //    thì có thể fill "" cho câu chưa chọn (đang là như vậy).
     const answersPayload: Record<number, string> = {};
     for (const q of quiz.questions) {
-      answersPayload[q.id] = quizAnswers[q.id] || ""; // "" nếu chưa chọn
+      answersPayload[q.id] = quizAnswers[q.id] || "";
     }
-
-    // (Tuỳ chọn) Cảnh báo nếu còn câu chưa làm
     const unanswered = Object.values(answersPayload).filter((v) => !v).length;
     if (unanswered > 0) {
       const ok = confirm(
@@ -184,22 +155,16 @@ export default function QuizPage() {
       );
       if (!ok) return;
     }
-
-    // 4. Lấy studentId từ auth (ví dụ localStorage hoặc context)
-    //    Tạm thời fallback random để bạn test (gỡ sau khi có auth thực)
-    const fallbackIds = [12, 13, 11, 15, 16, 17];
     const user = localStorage.getItem("user");
     const studentId = user ? Number(JSON.parse(user).userId) : 0;
-
     const submissionPayload = {
       quizId: parseInt(id as string, 10),
       studentId,
       startAt: startTime.toISOString(),
       submittedAt: new Date().toISOString(),
       endAt: new Date().toISOString(),
-      answers: answersPayload, // <-- dùng đáp án từ form
+      answers: answersPayload,
     };
-
     try {
       const res = await fetch("http://localhost:8080/api/quiz-submissions", {
         method: "POST",
@@ -219,14 +184,11 @@ export default function QuizPage() {
 
       setIsSubmited(true);
       const result = await res.json();
-
-      // Tính duration đẹp hơn
       const start = new Date(result.startAt).getTime();
       const end = new Date(result.endAt).getTime();
       const durationMs = Math.max(0, end - start);
       const durationMinutes = Math.floor(durationMs / 60000);
       const durationSeconds = Math.floor((durationMs % 60000) / 1000);
-      console.log(result);
 
       setQuizResult({
         studentName: result.studentName,

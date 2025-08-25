@@ -36,6 +36,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { QuizzFormData } from "@/types/quiz.type";
 import { QuizForm } from "@/components/forms/QuizForm";
 import { quizFormSchema } from "@/lib/validation/quizFormSchema";
+import { useTeacherClasses } from "../../hook/useTeacherClasses";
 interface QuizFormDataExtended extends QuizzFormData {
   files: File[];
   fileName: string;
@@ -46,24 +47,29 @@ interface QuizFormDataExtended extends QuizzFormData {
 export default function CreateQuizzPage() {
   const router = useRouter();
   const { setData } = useQuizzStorage();
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const userStr =
+    typeof window !== "undefined" ? localStorage.getItem("user") : null;
+  const userId = userStr ? JSON.parse(userStr).userId : null;
+
+  const { data: classes = [], isLoading } = useTeacherClasses(userId);
 
   const defaultValues: QuizFormDataExtended = {
-    title: "Đề kiểm tra 15 phút Toán học - Lớp 10",
-    grade: "10",
-    subject: "math",
+    title: "",
+    grade: "",
+    subject: "",
     startDate: new Date().toISOString().split("T")[0],
     endDate: new Date().toISOString().split("T")[0],
-    time: "40",
-    description: "Đề kiểm tra 15 phút chương I",
+    timeLimit: "40",
+    description: "",
     files: [],
-    classId: 2,
-    createdBy: 2,
+    classId: 0,
+    createdBy: userId ?? 0,
     fileName: "",
     questions: [],
   };
 
-  const handleSubmit = async (data: QuizFormDataExtended) => {
+  const onsubmit = async (data: QuizFormDataExtended) => {
+    console.log(" Submit data:", data);
     if (!data.files || data.files.length === 0) {
       toast.error("Vui lòng chọn ít nhất 1 file DOCX");
       return;
@@ -94,44 +100,6 @@ export default function CreateQuizzPage() {
     }
   };
 
-  const readMultipleFiles = async (files: File[]) => {
-    let combinedQuestions: any[] = [];
-
-    for (const file of files) {
-      const questions = await readDocxFile(file);
-      combinedQuestions = [...combinedQuestions, ...questions];
-    }
-
-    return combinedQuestions;
-  };
-
-  const onSubmit = async (data: QuizFormDataExtended) => {
-    if (!data.files || data.files.length === 0) {
-      toast.error("Vui lòng chọn ít nhất 1 file DOCX");
-      return;
-    }
-
-    try {
-      const questions = await readMultipleFiles(data.files);
-      if (questions.length === 0) {
-        toast.error("Không tìm thấy câu hỏi hợp lệ trong file.");
-        return;
-      }
-
-      const fileName = data.files.map((f) => f.name).join(", ");
-
-      setData({
-        ...data,
-        questions,
-        fileName,
-      });
-
-      router.push("/quizzes/teacher/quizzPreview");
-    } catch (error) {
-      console.error(error);
-      toast.error("Đã xảy ra lỗi khi đọc file.");
-    }
-  };
   const handleAIGen = () => {
     router.push("/quizzes/teacher/AIgenquiz");
   };
@@ -165,12 +133,8 @@ export default function CreateQuizzPage() {
             <QuizForm
               defaultValues={defaultValues}
               schema={quizFormSchema}
-              onSubmit={handleSubmit}
-              subjectOptions={[
-                { label: "Toán", value: "math" },
-                { label: "Văn", value: "literature" },
-                { label: "Anh", value: "english" },
-              ]}
+              onSubmit={onsubmit}
+              classOptions={classes}
             />
           </CardContent>
         </Card>

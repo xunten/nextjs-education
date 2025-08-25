@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Input } from "@/components/ui/input";
@@ -27,14 +27,18 @@ interface QuizFormProps {
   defaultValues: QuizFormDataExtended;
   schema: any;
   onSubmit: (data: QuizFormDataExtended) => Promise<void> | void;
-  subjectOptions: { label: string; value: string }[];
+  classOptions: {
+    id: number;
+    className: string;
+    subject: { id: number; name: string };
+  }[];
 }
 
 export function QuizForm({
   defaultValues,
   schema,
   onSubmit,
-  subjectOptions,
+  classOptions,
 }: QuizFormProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
@@ -48,7 +52,9 @@ export function QuizForm({
     defaultValues,
     resolver: yupResolver(schema),
   });
-
+  useEffect(() => {
+    console.log("❗ Form Errors:", errors);
+  }, [errors]);
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || []);
     setValue("files", selected);
@@ -65,52 +71,51 @@ export function QuizForm({
         )}
       </div>
 
-      <div className="space-y-1">
-        <Label htmlFor="grade">Khối lớp</Label>
-        <Input id="grade" placeholder="Khối lớp" {...register("grade")} />
-        {errors.grade && (
-          <p className="text-red-500 text-sm">{errors.grade.message}</p>
-        )}
-      </div>
-      <div className="flex gap-x-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1 w-full">
-          <Label>Môn học</Label>
+          <Label htmlFor="classId">Khối lớp</Label>
           <Controller
             control={control}
-            name="subject"
+            name="classId"
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select
+                value={field.value ? field.value.toString() : ""}
+                onValueChange={(val) => {
+                  const selectedClass = classOptions.find(
+                    (c) => c.id.toString() === val
+                  );
+                  field.onChange(Number(val));
+                  if (selectedClass) {
+                    setValue("subject", selectedClass.subject?.name || "");
+                  }
+                }}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Chọn môn học" />
+                  <SelectValue placeholder="Chọn lớp học" />
                 </SelectTrigger>
                 <SelectContent>
-                  {subjectOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
+                  {classOptions.map((cls) => (
+                    <SelectItem key={cls.id} value={cls.id.toString()}>
+                      {cls.className}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
           />
-          {errors.subject && (
-            <p className="text-red-500 text-sm">{errors.subject.message}</p>
+          {errors.classId && (
+            <p className="text-red-500 text-sm">{errors.classId.message}</p>
           )}
         </div>
-
         <div className="space-y-1 w-full">
-          <Label htmlFor="time">Thời lượng (phút)</Label>
-          <Input
-            id="time"
-            type="number"
-            placeholder="Thời gian làm bài"
-            min={1}
-            step={1}
-            inputMode="numeric"
-            {...register("time")}
+          <Label>Môn học</Label>
+          <Controller
+            control={control}
+            name="subject"
+            render={({ field }) => <Input {...field} disabled />}
           />
-          {errors.time && (
-            <p className="text-red-500 text-sm">{errors.time.message}</p>
+          {errors.subject && (
+            <p className="text-red-500 text-sm">{errors.subject.message}</p>
           )}
         </div>
       </div>
@@ -135,6 +140,21 @@ export function QuizForm({
             <p className="text-red-500 text-sm">{errors.endDate.message}</p>
           )}
         </div>
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="timeLimit">Thời lượng (phút)</Label>
+        <Input
+          id="timeLimit"
+          type="number"
+          placeholder="VD: 40"
+          min={1}
+          step={1}
+          inputMode="numeric"
+          {...register("timeLimit")}
+        />
+        {errors.timeLimit && (
+          <p className="text-red-500 text-sm">{errors.timeLimit.message}</p>
+        )}
       </div>
 
       {/* Mô tả */}

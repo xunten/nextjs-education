@@ -21,6 +21,7 @@ import {
   Target,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { fetchTeacherDashboard } from "@/services/dashboardService";
 
 export default function TeacherDashboard() {
   const router = useRouter();
@@ -28,53 +29,23 @@ export default function TeacherDashboard() {
   const [loading, setLoading] = useState(true);
 
   // Mock data for teacher dashboard
-  const [dashboardData] = useState({
-    totalClasses: 3,
-    totalStudents: 105,
-    totalAssignments: 24,
-    pendingGrading: 8,
+  const [dashboardData, setDashboardData] = useState<{
+    totalClasses: number;
+    totalStudents: number;
+    totalAssignments: number;
+    pendingGrading: number;
+    averageGrade: number;
+    recentActivities: any[];
+    upcomingDeadlinesTeacher: any[];
+    topPerformers: any[];
+  }>({
+    totalClasses: 0,
+    totalStudents: 0,
+    totalAssignments: 0,
+    pendingGrading: 0,
     averageGrade: 8.6,
-    recentActivities: [
-      {
-        id: 1,
-        type: "submission",
-        message: "15 học sinh đã nộp bài tập Chương 3",
-        time: "2 giờ trước",
-        class: "Toán 12A1",
-      },
-      {
-        id: 2,
-        type: "grade",
-        message: "Đã chấm xong bài kiểm tra 15 phút",
-        time: "4 giờ trước",
-        class: "Toán 12A2",
-      },
-      {
-        id: 3,
-        type: "question",
-        message: "Nguyễn Văn An đã đặt câu hỏi về bài tập",
-        time: "1 ngày trước",
-        class: "Toán 11A1",
-      },
-    ],
-    upcomingDeadlines: [
-      {
-        id: 1,
-        title: "Bài tập Chương 4 - Hàm số",
-        class: "Toán 12A1",
-        dueDate: "2024-01-28",
-        submissions: 12,
-        total: 35,
-      },
-      {
-        id: 2,
-        title: "Kiểm tra giữa kỳ",
-        class: "Toán 12A2",
-        dueDate: "2024-01-30",
-        submissions: 0,
-        total: 32,
-      },
-    ],
+    recentActivities: [],
+    upcomingDeadlinesTeacher: [],
     topPerformers: [
       { name: "Nguyễn Thị Mai", class: "Toán 12A1", grade: 9.5 },
       { name: "Trần Văn Hùng", class: "Toán 12A1", grade: 9.2 },
@@ -94,7 +65,22 @@ export default function TeacherDashboard() {
     try {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-      setLoading(false);
+
+      // 🔹 gọi API lấy dữ liệu dashboard
+      fetchTeacherDashboard().then((data) => {
+        setDashboardData((prev) => ({
+          ...prev,
+          totalClasses: data.totalClasses,
+          totalStudents: data.totalStudents,
+          totalAssignments: data.totalAssignments,
+          pendingGrading: data.pendingGrading,
+          averageGrade: data.averageGrade,
+          recentActivities: data.recentActivities,
+          upcomingDeadlinesTeacher: data.upcomingDeadlinesTeacher,
+          // topPerformers: data.topPerformers ?? prev.topPerformers,
+        }));
+        setLoading(false);
+      });
     } catch {
       localStorage.removeItem("user");
       router.replace("/auth/login");
@@ -102,10 +88,10 @@ export default function TeacherDashboard() {
   }, [router]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className="p-10 text-center">Đang tải dữ liệu...</div>;
   }
 
-  if (!user) {
+  if (!user || !dashboardData) {
     return null;
   }
 
@@ -179,230 +165,295 @@ export default function TeacherDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column */}
+          {" "}
+          {/* Left Column */}{" "}
           <div className="lg:col-span-2 space-y-6">
-            {/* Quick Actions */}
+            {" "}
+            {/* Quick Actions */}{" "}
             <Card>
+              {" "}
               <CardHeader>
-                <CardTitle>Thao tác nhanh</CardTitle>
-              </CardHeader>
+                {" "}
+                <CardTitle>Thao tác nhanh</CardTitle>{" "}
+              </CardHeader>{" "}
               <CardContent>
+                {" "}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {" "}
                   <Link href="/assignments/teacher">
+                    {" "}
                     <Button className="w-full h-20 flex flex-col gap-2">
-                      <Plus className="h-5 w-5" />
-                      <span className="text-xs">Tạo bài tập</span>
-                    </Button>
-                  </Link>
+                      {" "}
+                      <Plus className="h-5 w-5" />{" "}
+                      <span className="text-xs">Tạo bài tập</span>{" "}
+                    </Button>{" "}
+                  </Link>{" "}
                   <Link href="/classes/teacher">
+                    {" "}
                     <Button
                       variant="outline"
                       className="w-full h-20 flex flex-col gap-2 bg-transparent"
                     >
-                      <BookOpen className="h-5 w-5" />
-                      <span className="text-xs">Quản lý lớp</span>
-                    </Button>
-                  </Link>
+                      {" "}
+                      <BookOpen className="h-5 w-5" />{" "}
+                      <span className="text-xs">Quản lý lớp</span>{" "}
+                    </Button>{" "}
+                  </Link>{" "}
                   <Link href="/grades/teacher">
+                    {" "}
                     <Button
                       variant="outline"
                       className="w-full h-20 flex flex-col gap-2 bg-transparent"
                     >
-                      <Award className="h-5 w-5" />
-                      <span className="text-xs">Xem điểm</span>
-                    </Button>
-                  </Link>
+                      {" "}
+                      <Award className="h-5 w-5" />{" "}
+                      <span className="text-xs">Xem điểm</span>{" "}
+                    </Button>{" "}
+                  </Link>{" "}
                   <Link href="/quizzes/teacher">
+                    {" "}
                     <Button
                       variant="outline"
                       className="w-full h-20 flex flex-col gap-2 bg-transparent"
                     >
-                      <Target className="h-5 w-5" />
-                      <span className="text-xs">Tạo quiz</span>
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent Activities */}
+                      {" "}
+                      <Target className="h-5 w-5" />{" "}
+                      <span className="text-xs">Tạo quiz</span>{" "}
+                    </Button>{" "}
+                  </Link>{" "}
+                </div>{" "}
+              </CardContent>{" "}
+            </Card>{" "}
+            {/* Recent Activities */}{" "}
             <Card>
+              {" "}
               <CardHeader>
-                <CardTitle>Hoạt động gần đây</CardTitle>
-              </CardHeader>
+                {" "}
+                <CardTitle>Hoạt động gần đây</CardTitle>{" "}
+              </CardHeader>{" "}
               <CardContent className="space-y-4">
-                {dashboardData.recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3">
+                {" "}
+                {dashboardData.recentActivities.map((activity, index) => (
+                  <div
+                    key={activity.id ?? index}
+                    className="flex items-start space-x-3"
+                  >
+                    {" "}
                     <div className="flex-shrink-0">
+                      {" "}
                       {activity.type === "submission" && (
                         <FileText className="h-5 w-5 text-blue-500" />
-                      )}
+                      )}{" "}
                       {activity.type === "grade" && (
                         <Award className="h-5 w-5 text-green-500" />
-                      )}
+                      )}{" "}
                       {activity.type === "question" && (
                         <AlertCircle className="h-5 w-5 text-orange-500" />
-                      )}
-                    </div>
+                      )}{" "}
+                    </div>{" "}
                     <div className="flex-1">
-                      <p className="text-sm font-medium">{activity.message}</p>
+                      {" "}
+                      <p className="text-sm font-medium">
+                        {activity.message}
+                      </p>{" "}
                       <div className="flex items-center gap-2 mt-1">
+                        {" "}
                         <Badge variant="outline" className="text-xs">
-                          {activity.class}
-                        </Badge>
+                          {" "}
+                          {activity.className}{" "}
+                        </Badge>{" "}
                         <span className="text-xs text-muted-foreground">
-                          {activity.time}
-                        </span>
-                      </div>
-                    </div>
+                          {" "}
+                          {activity.time}{" "}
+                        </span>{" "}
+                      </div>{" "}
+                    </div>{" "}
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Upcoming Deadlines */}
+                ))}{" "}
+              </CardContent>{" "}
+            </Card>{" "}
+            {/* Upcoming Deadlines */}{" "}
             <Card>
+              {" "}
               <CardHeader>
+                {" "}
                 <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Hạn nộp sắp tới
-                </CardTitle>
-              </CardHeader>
+                  {" "}
+                  <Calendar className="h-5 w-5" /> Hạn nộp sắp tới{" "}
+                </CardTitle>{" "}
+              </CardHeader>{" "}
               <CardContent className="space-y-4">
-                {dashboardData.upcomingDeadlines.map((deadline) => (
+                {" "}
+                {dashboardData.upcomingDeadlinesTeacher.map((deadline) => (
                   <div key={deadline.id} className="border rounded-lg p-4">
+                    {" "}
                     <div className="flex justify-between items-start mb-2">
+                      {" "}
                       <div>
-                        <h4 className="font-medium">{deadline.title}</h4>
-                        <Badge variant="outline">{deadline.class}</Badge>
-                      </div>
+                        {" "}
+                        <h4 className="font-medium">{deadline.title}</h4>{" "}
+                        <Badge variant="outline">{deadline.className}</Badge>{" "}
+                      </div>{" "}
                       <span className="text-sm text-muted-foreground">
-                        {deadline.dueDate}
-                      </span>
-                    </div>
+                        {" "}
+                        {deadline.dueDate}{" "}
+                      </span>{" "}
+                    </div>{" "}
                     <div className="space-y-2">
+                      {" "}
                       <div className="flex justify-between text-sm">
+                        {" "}
                         <span>
-                          Đã nộp: {deadline.submissions}/{deadline.total}
-                        </span>
+                          {" "}
+                          Đã nộp: {deadline.submittedCount}/
+                          {deadline.totalStudents}{" "}
+                        </span>{" "}
                         <span>
+                          {" "}
                           {Math.round(
-                            (deadline.submissions / deadline.total) * 100
-                          )}
-                          %
-                        </span>
-                      </div>
+                            (deadline.submittedCount / deadline.totalStudents) *
+                              100
+                          )}{" "}
+                          %{" "}
+                        </span>{" "}
+                      </div>{" "}
                       <Progress
-                        value={(deadline.submissions / deadline.total) * 100}
-                      />
-                    </div>
+                        value={
+                          (deadline.submittedCount / deadline.totalStudents) *
+                          100
+                        }
+                      />{" "}
+                    </div>{" "}
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column */}
+                ))}{" "}
+              </CardContent>{" "}
+            </Card>{" "}
+          </div>{" "}
+          {/* Right Column */}{" "}
           <div className="space-y-6">
-            {/* Performance Overview */}
+            {" "}
+            {/* Performance Overview */}{" "}
             <Card>
+              {" "}
               <CardHeader>
+                {" "}
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Tổng quan thành tích
-                </CardTitle>
-              </CardHeader>
+                  {" "}
+                  <TrendingUp className="h-5 w-5" /> Tổng quan thành tích{" "}
+                </CardTitle>{" "}
+              </CardHeader>{" "}
               <CardContent className="space-y-4">
+                {" "}
                 <div className="text-center">
+                  {" "}
                   <div className="text-3xl font-bold text-blue-600">
-                    {dashboardData.averageGrade}
-                  </div>
+                    {" "}
+                    {dashboardData.averageGrade}{" "}
+                  </div>{" "}
                   <p className="text-sm text-muted-foreground">
-                    Điểm trung bình chung
-                  </p>
-                </div>
+                    {" "}
+                    Điểm trung bình chung{" "}
+                  </p>{" "}
+                </div>{" "}
                 <div className="space-y-2">
+                  {" "}
                   <div className="flex justify-between text-sm">
-                    <span>Xuất sắc (≥9.0)</span>
-                    <span className="font-medium">25%</span>
-                  </div>
+                    {" "}
+                    <span>Xuất sắc (≥9.0)</span>{" "}
+                    <span className="font-medium">25%</span>{" "}
+                  </div>{" "}
                   <div className="flex justify-between text-sm">
-                    <span>Giỏi (8.0-8.9)</span>
-                    <span className="font-medium">45%</span>
-                  </div>
+                    {" "}
+                    <span>Giỏi (8.0-8.9)</span>{" "}
+                    <span className="font-medium">45%</span>{" "}
+                  </div>{" "}
                   <div className="flex justify-between text-sm">
-                    <span>Khá (6.5-7.9)</span>
-                    <span className="font-medium">25%</span>
-                  </div>
+                    {" "}
+                    <span>Khá (6.5-7.9)</span>{" "}
+                    <span className="font-medium">25%</span>{" "}
+                  </div>{" "}
                   <div className="flex justify-between text-sm">
-                    <span>Cần cải thiện</span>
-                    <span className="font-medium">5%</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Top Performers */}
+                    {" "}
+                    <span>Cần cải thiện</span>{" "}
+                    <span className="font-medium">5%</span>{" "}
+                  </div>{" "}
+                </div>{" "}
+              </CardContent>{" "}
+            </Card>{" "}
+            {/* Top Performers */}{" "}
             <Card>
+              {" "}
               <CardHeader>
+                {" "}
                 <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5" />
-                  Học sinh xuất sắc
-                </CardTitle>
-              </CardHeader>
+                  {" "}
+                  <Award className="h-5 w-5" /> Học sinh xuất sắc{" "}
+                </CardTitle>{" "}
+              </CardHeader>{" "}
               <CardContent className="space-y-3">
+                {" "}
                 {dashboardData.topPerformers.map((student, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between"
                   >
+                    {" "}
                     <div>
-                      <p className="font-medium">{student.name}</p>
+                      {" "}
+                      <p className="font-medium">{student.name}</p>{" "}
                       <p className="text-sm text-muted-foreground">
-                        {student.class}
-                      </p>
-                    </div>
-                    <Badge className="bg-green-500">{student.grade}</Badge>
+                        {" "}
+                        {student.class}{" "}
+                      </p>{" "}
+                    </div>{" "}
+                    <Badge className="bg-green-500">{student.grade}</Badge>{" "}
                   </div>
-                ))}
+                ))}{" "}
                 <Link href="/grades/teacher">
+                  {" "}
                   <Button
                     variant="outline"
                     size="sm"
                     className="w-full mt-2 bg-transparent"
                   >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Xem tất cả
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats */}
+                    {" "}
+                    <Eye className="h-4 w-4 mr-2" /> Xem tất cả{" "}
+                  </Button>{" "}
+                </Link>{" "}
+              </CardContent>{" "}
+            </Card>{" "}
+            {/* Quick Stats */}{" "}
             <Card>
+              {" "}
               <CardHeader>
-                <CardTitle>Thống kê nhanh</CardTitle>
-              </CardHeader>
+                {" "}
+                <CardTitle>Thống kê nhanh</CardTitle>{" "}
+              </CardHeader>{" "}
               <CardContent className="space-y-3">
+                {" "}
                 <div className="flex justify-between">
-                  <span className="text-sm">Bài tập đã tạo tuần này</span>
-                  <span className="font-medium">5</span>
-                </div>
+                  {" "}
+                  <span className="text-sm">Bài tập đã tạo tuần này</span>{" "}
+                  <span className="font-medium">5</span>{" "}
+                </div>{" "}
                 <div className="flex justify-between">
-                  <span className="text-sm">Bài đã chấm tuần này</span>
-                  <span className="font-medium">23</span>
-                </div>
+                  {" "}
+                  <span className="text-sm">Bài đã chấm tuần này</span>{" "}
+                  <span className="font-medium">23</span>{" "}
+                </div>{" "}
                 <div className="flex justify-between">
-                  <span className="text-sm">Câu hỏi từ học sinh</span>
-                  <span className="font-medium text-orange-600">3</span>
-                </div>
+                  {" "}
+                  <span className="text-sm">Câu hỏi từ học sinh</span>{" "}
+                  <span className="font-medium text-orange-600">3</span>{" "}
+                </div>{" "}
                 <div className="flex justify-between">
-                  <span className="text-sm">Tài liệu đã tải lên</span>
-                  <span className="font-medium">12</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  {" "}
+                  <span className="text-sm">Tài liệu đã tải lên</span>{" "}
+                  <span className="font-medium">12</span>{" "}
+                </div>{" "}
+              </CardContent>{" "}
+            </Card>{" "}
+          </div>{" "}
         </div>
       </div>
     </div>

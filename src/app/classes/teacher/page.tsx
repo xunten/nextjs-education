@@ -78,10 +78,8 @@ export default function TeacherClassesPage() {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
 
-      // Load lớp học cho giáo viên
       loadClasses(parsedUser.userId, pageNumber);
 
-      // Load danh sách môn học
       getAllSubjects()
         .then((data) => {
           setSubjects(data);
