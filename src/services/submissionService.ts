@@ -1,3 +1,4 @@
+
 import apiClient from '@/lib/axios';
 import { Submission } from '@/types/assignment';
 
@@ -7,13 +8,32 @@ import { Submission } from '@/types/assignment';
 export const createSubmissionFormData = (data: {
   assignmentId: number;
   studentId: number;
-  file?: File;
+  file: File;
+  description?: string;
 }): FormData => {
   const formData = new FormData();
   formData.append('assignmentId', String(data.assignmentId));
   formData.append('studentId', String(data.studentId));
+  formData.append('file', data.file);
+  if (data.description) {
+    formData.append('description', data.description);
+  }
+  return formData;
+};
+
+/**
+ * Tạo FormData để chỉnh sửa bài nộp
+ */
+export const createUpdateSubmissionFormData = (data: {
+  file?: File;
+  description?: string;
+}): FormData => {
+  const formData = new FormData();
   if (data.file) {
     formData.append('file', data.file);
+  }
+  if (data.description) {
+    formData.append('description', data.description);
   }
   return formData;
 };
@@ -26,9 +46,20 @@ export const getAllSubmissions = async (): Promise<Submission[]> => {
   return response.data;
 };
 
-// Nộp bài
+// Nộp bài tập
 export const submitAssignment = async (formData: FormData): Promise<Submission> => {
   const response = await apiClient.post<Submission>('/submissions', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+// Chỉnh sửa bài nộp
+export const updateSubmission = async (
+  submissionId: number,
+  formData: FormData
+): Promise<Submission> => {
+  const response = await apiClient.patch<Submission>(`/submissions/${submissionId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data;
@@ -46,24 +77,17 @@ export const gradeSubmission = async (
   return response.data;
 };
 
-export const updateSubmissionGrade = async (submissionId: number, score: number, teacherComment: string): Promise<Submission> => {
-  try {
-    const response = await fetch(`/api/submissions/${submissionId}/grade`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ score, teacherComment }),
-    })
-    if (!response.ok) {
-      throw new Error("Failed to update submission grade")
-    }
-    return await response.json()
-  } catch (error) {
-    console.error("Error updating submission grade:", error)
-    throw error
-  }
-}
+// Chỉnh sửa điểm
+export const updateGradeSubmission = async (
+  submissionId: number,
+  payload: { score: number; comment?: string }
+): Promise<Submission> => {
+  const response = await apiClient.patch<Submission>(
+    `/submissions/${submissionId}/update-grade`,
+    payload
+  );
+  return response.data;
+};
 
 // Lấy submissions theo assignment
 export const getSubmissionsByAssignment = async (
@@ -100,7 +124,7 @@ export const getSubmissionsByClassId = async (classId: number): Promise<Submissi
 
 // Tải file submission
 export const downloadSubmissionFile = async (submissionId: number): Promise<Blob> => {
-  const response = await apiClient.get(`/submissions/${submissionId}/download`, {
+  const response = await apiClient.get(`/submissions/download/${submissionId}`, {
     responseType: 'blob',
   });
   return response.data;

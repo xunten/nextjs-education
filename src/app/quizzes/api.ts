@@ -20,7 +20,6 @@ export function buildQueryString(filters: QuizFilters) {
     return s ? `?${s}` : "";
 }
 
-// mapper server → QuizCard
 export function toQuizCard(quiz: any): QuizCard {
     return {
         id: quiz.id,
@@ -42,12 +41,18 @@ export function toQuizCard(quiz: any): QuizCard {
 }
 
 // endpoints
+
 export async function fetchQuizzes(filters: QuizFilters = {}) {
-    const qs = buildQueryString(filters);
-    const data = await api<any[]>(`/api/quizzes${qs}`);
+    const qs = buildQueryString(filters); // tạo query string từ filters
+    const data = await api<any>(`/api/quizzes${qs}`);
     return data ?? [];
 }
-
+export async function fetchQuizzesByTeacher(teacherId: number, filters: QuizFilters = {}) {
+    // Nếu endpoint của bạn là /api/quizzes/teacher/{teacherId}
+    const qs = buildQueryString(filters);
+    const data = await api<any>(`/api/quizzes/teacher/${teacherId}${qs}`);
+    return data ?? [];
+}
 export async function fetchQuizById(id: number) {
     return api<any>(`/api/quizzes/${id}`);
 }

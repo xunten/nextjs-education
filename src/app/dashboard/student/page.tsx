@@ -20,9 +20,13 @@ import {
 
 import { StudentDashboardResponse } from "@/types/dashboard";
 import { fetchStudentDashboard } from "@/services/dashboardService";
+import { useRecentScoreOfStudent } from "../hooks/useRecentScoreOfStudent";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
 export default function StudentDashboard() {
   const router = useRouter();
+  const { data, isLoading, isError, error } = useRecentScoreOfStudent();
 
   const [user, setUser] = useState<{ username: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +47,24 @@ export default function StudentDashboard() {
     completedAssignments: 0,
     pendingAssignments: 0,
     averageGrade: 8.5,
-    upcomingDeadlines: [],
+    upcomingDeadlines: [
+      {
+        id: 1,
+        title: "Bài tập Chương 4 - Hàm số",
+        class: "Toán 12A1",
+        dueDate: "2024-01-28",
+        timeLeft: "3 ngày",
+        status: "pending",
+      },
+      {
+        id: 2,
+        title: "Kiểm tra giữa kỳ",
+        class: "Vật lý 12A1",
+        dueDate: "2024-01-30",
+        timeLeft: "5 ngày",
+        status: "pending",
+      },
+    ],
     recentGrades: [
       {
         id: 1,
@@ -70,7 +91,26 @@ export default function StudentDashboard() {
         date: "2024-01-15",
       },
     ],
-    classProgress: [],
+    classProgress: [
+      {
+        class: "Toán 12A1",
+        completed: 5,
+        total: 6,
+        average: 8.8,
+      },
+      {
+        class: "Vật lý 12A1",
+        completed: 4,
+        total: 5,
+        average: 8.2,
+      },
+      {
+        class: "Hóa 12A1",
+        completed: 3,
+        total: 4,
+        average: 8.5,
+      },
+    ],
   });
 
   useEffect(() => {
@@ -123,13 +163,38 @@ export default function StudentDashboard() {
   if (loading) return <div>Loading...</div>;
   if (!user) return null;
 
+  const getTypeIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case "quiz":
+        return <Target className="h-4 w-4 text-blue-500" />;
+      case "assignment":
+        return <FileText className="h-4 w-4 text-green-500" />;
+      case "exam":
+        return <Award className="h-4 w-4 text-purple-500" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type.toLowerCase()) {
+      case "quiz":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "assignment":
+        return "bg-green-50 text-green-700 border-green-200";
+      case "exam":
+        return "bg-purple-50 text-purple-700 border-purple-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Chào mừng, {user.username}!
+            Chào mừng, {user.userName}!
           </h1>
           <p className="text-gray-600">
             Theo dõi tiến độ học tập và hoàn thành bài tập
@@ -291,35 +356,66 @@ export default function StudentDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {dashboardData.recentGrades.map((grade) => (
+                {data?.map((score, idx) => (
                   <div
-                    key={grade.id}
-                    className="flex items-center justify-between border rounded-lg p-3"
+                    key={idx}
+                    className="border rounded-lg p-4 hover:shadow-md transition-shadow"
                   >
-                    <div>
-                      <h4 className="font-medium">{grade.assignment}</h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline">{grade.class}</Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {grade.date}
+                    {/* Header with title and score */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          {getTypeIcon(score.type)}
+                          <h4 className="font-semibold text-lg">
+                            {score.title}
+                          </h4>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {score.className}
+                        </Badge>
+                      </div>
+                      <div className="text-right ml-4">
+                        <div className="text-2xl font-bold text-primary mb-1">
+                          {score.score}/10
+                        </div>
+                        {getGradeBadge(score.score, 10)}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <Badge
+                        variant="outline"
+                        className={`${getTypeColor(score.type)} font-medium`}
+                      >
+                        {score.type}
+                      </Badge>
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          {format(
+                            new Date(score.submittedAt),
+                            "dd/MM/yyyy HH:mm",
+                            {
+                              locale: vi,
+                            }
+                          )}
                         </span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold">
-                        {grade.grade}/{grade.maxGrade}
-                      </div>
-                      {getGradeBadge(grade.grade, grade.maxGrade)}
-                    </div>
                   </div>
                 ))}
+
+                {(!data || data.length === 0) && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>Chưa có kết quả nào</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Right Column */}
           <div className="space-y-6">
-            {/* Progress Overview */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -417,32 +513,9 @@ export default function StudentDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
-                  <Award className="h-8 w-8 text-yellow-600" />
-                  <div>
-                    <p className="font-medium">Học sinh xuất sắc</p>
-                    <p className="text-xs text-muted-foreground">
-                      Điểm TB ≥ 8.5
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                  <CheckCircle className="h-8 w-8 text-blue-600" />
-                  <div>
-                    <p className="font-medium">Hoàn thành đúng hạn</p>
-                    <p className="text-xs text-muted-foreground">
-                      100% bài tập đúng hạn
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                  <TrendingUp className="h-8 w-8 text-green-600" />
-                  <div>
-                    <p className="font-medium">Tiến bộ vượt trội</p>
-                    <p className="text-xs text-muted-foreground">
-                      Cải thiện +0.3 điểm
-                    </p>
-                  </div>
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>Hiện tại bạn chưa có thành tích nào!</p>
                 </div>
               </CardContent>
             </Card>

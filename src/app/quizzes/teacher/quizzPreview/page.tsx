@@ -10,9 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { QuizEditor } from "@/components/editor/quiz-editor";
 import { ConfirmLeaveDialog } from "@/components/shared/confirm-leave-dialog";
-import { useApproveQuiz } from "../../hook/useApproveQuiz";
 import { useQuizzStorage } from "@/lib/store/useQuizzStorage";
 import { useRouter } from "next/navigation";
+import { useApproveQuiz } from "../../hook/quiz-hooks";
 
 export default function QuizEditPage() {
   const router = useRouter();
@@ -117,7 +117,7 @@ export default function QuizEditPage() {
                   <Label>Thời gian làm (phút)</Label>
                   <Input
                     type="number"
-                    value={quiz.time}
+                    value={quiz.timeLimit}
                     onChange={(e) => setData({ time: e.target.value })}
                     className="border-green-500/30"
                   />

@@ -8,4 +8,6 @@ export interface ClassItem {
   createdAt: string;
   updatedAt: string;
   teacherId: number;
+  subjectId: number;
+  join_mode: 'AUTO' | 'APPROVAL' ;
 }

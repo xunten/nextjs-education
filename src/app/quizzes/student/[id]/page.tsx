@@ -1,7 +1,7 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useParams } from "next/navigation";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -11,18 +11,12 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import {
-  CheckCircle2,
-  Circle,
-  Clock,
-  ArrowLeft,
-  ArrowRight,
-  Send,
-} from "lucide-react";
+import { Clock, ArrowLeft, ArrowRight, Send } from "lucide-react";
 import QuestionCard from "./QuestionCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import Navigation from "@/components/navigation";
 import { QuizResultDialog } from "../components/quiz-result-dialog";
+
 interface QuizResultData {
   studentName: string;
   className: string;
@@ -34,31 +28,34 @@ interface QuizResultData {
   totalQuestions: number;
   title: string;
 }
+
 export default function QuizPage() {
   const { id } = useParams();
-  const router = useRouter();
   const [quiz, setQuiz] = useState<any>(null);
-  const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({});
+  const [quizAnswers, setQuizAnswers] = useState<
+    Record<number, string | string[]>
+  >({});
   const [timeLeft, setTimeLeft] = useState(0);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmited, setIsSubmited] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
-  const QUESTIONS_PER_PAGE = 5;
   const [currentPage, setCurrentPage] = useState(0);
+  const QUESTIONS_PER_PAGE = 5;
   const currentQuestions = quiz?.questions.slice(
     currentPage * QUESTIONS_PER_PAGE,
     (currentPage + 1) * QUESTIONS_PER_PAGE
   );
-  const [showResultDialog, setShowResultDialog] = useState(false);
   const [quizResult, setQuizResult] = useState<QuizResultData | null>(null);
   const [isResultOpen, setIsResultOpen] = useState(false);
-  const token = localStorage.getItem("accessToken");
+
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch quiz data
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        // hoặc chỗ bạn lưu token
-
         const res = await fetch(`http://localhost:8080/api/quizzes/${id}`, {
           method: "GET",
           headers: {
@@ -67,20 +64,16 @@ export default function QuizPage() {
           },
         });
 
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
         const data = await res.json();
-        console.log(data);
-
         setQuiz(data);
-
         setStartTime(new Date());
         setTimeLeft(data.timeLimit * 60);
 
+        // init answers
         const initialAnswers = data.questions?.reduce(
-          (acc: Record<number, string>, q: any) => {
+          (acc: Record<number, string | string[]>, q: any) => {
             acc[q.id] = "";
             return acc;
           },
@@ -93,22 +86,39 @@ export default function QuizPage() {
     };
 
     fetchQuiz();
-  }, [id]);
+  }, [id, token]);
 
+  // Timer countdown
   useEffect(() => {
-    if (timeLeft <= 0) {
-      if (!isSubmitting) handleSubmit();
+    if (isSubmited || isSubmitting || timeLeft <= 0) {
+      // Dừng timer nếu đã nộp hoặc hết giờ
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+
+      // Auto-submit một lần duy nhất khi hết giờ và chưa nộp
+      if (timeLeft <= 0 && !isSubmited && !isSubmitting) {
+        handleSubmit();
+      }
+
       return;
     }
 
-    const timer = setInterval(() => {
+    // Clear timer cũ trước khi tạo mới
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    timerRef.current = setInterval(() => {
       setTimeLeft((prev) => prev - 1);
     }, 1000);
-    if (isSubmitting) {
-      clearInterval(timer);
-    }
-    return () => clearInterval(timer);
-  }, [timeLeft, isSubmitting]);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [timeLeft, isSubmitting, isSubmited]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -117,116 +127,114 @@ export default function QuizPage() {
       .toString()
       .padStart(2, "0")}`;
   };
+
   const formatDateTime = (isoString: string) => {
     const date = new Date(isoString);
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-    const seconds = date.getSeconds().toString().padStart(2, "0");
-
-    return `${hours}:${minutes}:${seconds}`;
+    return `${date.getHours().toString().padStart(2, "0")}:${date
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}:${date.getSeconds().toString().padStart(2, "0")}`;
   };
 
-  const handleAnswerChange = (questionId: number, answer: string) => {
+  const handleAnswerChange = (
+    questionId: number,
+    answer: string | string[]
+  ) => {
     setQuizAnswers((prev) => ({
       ...prev,
       [questionId]: answer,
     }));
   };
 
-  const handleQuestionNavigation = (index: number) => {
-    setCurrentQuestion(index);
-  };
-
-  const handlePrevQuestion = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
-    }
-  };
-
-  const handleNextQuestion = () => {
-    if (quiz && currentQuestion < quiz.questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    }
-  };
-
   const calculateProgress = () => {
     if (!quiz) return 0;
-
     const answeredCount = Object.values(quizAnswers).filter(
-      (answer) => answer !== ""
+      (answer) =>
+        (Array.isArray(answer) && answer.length > 0) ||
+        (!Array.isArray(answer) && answer !== "")
     ).length;
-
     return (answeredCount / quiz.questions.length) * 100;
   };
 
   const handleSubmit = useCallback(async () => {
-    if (!startTime || isSubmitting) return;
-
-    // 1. Lấy token đúng lúc submit (tránh đọc ở top-level)
-    const token = localStorage.getItem("accessToken");
-
-    // 2. Validate: phải có quiz và có câu hỏi
+    if (!startTime || isSubmitting || isSubmited) return;
     if (!quiz || !quiz.questions?.length) return;
 
-    // 3. Gom đáp án từ state (Record<questionId, optionLabel>)
-    //    Chỉ gửi những câu đã chọn; hoặc nếu backend yêu cầu đủ
-    //    thì có thể fill "" cho câu chưa chọn (đang là như vậy).
-    const answersPayload: Record<number, string> = {};
-    for (const q of quiz.questions) {
-      answersPayload[q.id] = quizAnswers[q.id] || ""; // "" nếu chưa chọn
-    }
-
-    // (Tuỳ chọn) Cảnh báo nếu còn câu chưa làm
-    const unanswered = Object.values(answersPayload).filter((v) => !v).length;
-    if (unanswered > 0) {
-      const ok = confirm(
-        `Bạn còn ${unanswered} câu chưa làm. Bạn vẫn muốn nộp chứ?`
-      );
-      if (!ok) return;
-    }
-
-    // 4. Lấy studentId từ auth (ví dụ localStorage hoặc context)
-    //    Tạm thời fallback random để bạn test (gỡ sau khi có auth thực)
-    const fallbackIds = [12, 13, 11, 15, 16, 17];
-    const user = localStorage.getItem("user");
-    const studentId = user ? Number(JSON.parse(user).userId) : 0;
-
-    const submissionPayload = {
-      quizId: parseInt(id as string, 10),
-      studentId,
-      startAt: startTime.toISOString(),
-      submittedAt: new Date().toISOString(),
-      endAt: new Date().toISOString(),
-      answers: answersPayload, // <-- dùng đáp án từ form
-    };
+    setIsSubmitting(true);
 
     try {
+      const answersPayload: Record<number, string[]> = {};
+      for (const q of quiz.questions) {
+        const answer = quizAnswers[q.id];
+        if (Array.isArray(answer)) {
+          answersPayload[q.id] = answer;
+        } else if (typeof answer === "string" && answer) {
+          answersPayload[q.id] = [answer];
+        } else {
+          answersPayload[q.id] = [];
+        }
+      }
+
+      const unanswered = Object.values(answersPayload).filter(
+        (v) => v.length === 0
+      ).length;
+      if (unanswered > 0) {
+        const ok = confirm(
+          `Bạn còn ${unanswered} câu chưa làm. Bạn vẫn muốn nộp chứ?`
+        );
+        if (!ok) {
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      const userString = localStorage.getItem("user");
+      if (!userString) throw new Error("User data not found");
+
+      const user = JSON.parse(userString);
+      const studentId = user.userId;
+      if (!studentId) throw new Error("Student ID not found");
+
+      const submissionPayload = {
+        quizId: parseInt(id as string, 10),
+        studentId,
+        startAt: startTime.toISOString(),
+        endAt: new Date().toISOString(),
+        answers: answersPayload,
+      };
+
       const res = await fetch("http://localhost:8080/api/quiz-submissions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(submissionPayload),
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({}));
-        console.error("Lỗi khi nộp bài:", error);
-        setIsSubmitting(false);
-        return;
+        const errorText = await res.text();
+        let errorMessage = "Có lỗi xảy ra khi nộp bài";
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorMessage;
+        } catch {}
+        throw new Error(errorMessage);
       }
 
-      setIsSubmited(true);
       const result = await res.json();
+      setIsSubmited(true);
 
-      // Tính duration đẹp hơn
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+
       const start = new Date(result.startAt).getTime();
       const end = new Date(result.endAt).getTime();
       const durationMs = Math.max(0, end - start);
       const durationMinutes = Math.floor(durationMs / 60000);
       const durationSeconds = Math.floor((durationMs % 60000) / 1000);
-      console.log(result);
 
       setQuizResult({
         studentName: result.studentName,
@@ -241,13 +249,14 @@ export default function QuizPage() {
       });
 
       setIsResultOpen(true);
-      setShowResultDialog(true);
-    } catch (err) {
-      console.error("Lỗi kết nối:", err);
+    } catch (err: any) {
+      console.error("Error submitting quiz:", err);
+      alert(`Lỗi khi nộp bài: ${err.message}`);
     } finally {
       setIsSubmitting(false);
     }
-  }, [id, startTime, quiz, quizAnswers, isSubmitting]);
+  }, [id, startTime, quiz, quizAnswers, isSubmitting, isSubmited, token]);
+
   if (!quiz) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
@@ -259,10 +268,8 @@ export default function QuizPage() {
                 <Skeleton className="h-5 w-1/2 mt-2" />
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                </div>
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-4 w-3/4" />
                 <div className="grid grid-cols-5 gap-2">
                   {[...Array(10)].map((_, i) => (
                     <Skeleton key={i} className="h-10 w-10 rounded-full" />
@@ -271,25 +278,6 @@ export default function QuizPage() {
                 <Skeleton className="h-10 w-full mt-4" />
               </CardContent>
             </Card>
-
-            <div className="lg:col-span-3 space-y-6">
-              <Card>
-                <CardHeader>
-                  <Skeleton className="h-6 w-1/4" />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Skeleton className="h-6 w-full" />
-                  <div className="space-y-2">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="flex items-center space-x-3">
-                        <Skeleton className="h-4 w-4 rounded-full" />
-                        <Skeleton className="h-4 w-3/4" />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </div>
         </div>
       </div>
@@ -299,7 +287,6 @@ export default function QuizPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <Card className="lg:col-span-1 sticky top-4 h-fit">
@@ -350,10 +337,10 @@ export default function QuizPage() {
                         size="icon"
                         onClick={() => setCurrentPage(pageOfQuestion)}
                         className={`
-          ${isInCurrentPage ? "border-2 border-primary" : ""}
-          ${isAnswered ? "bg-gray-700 text-white  " : ""}
-            hover:bg-primary hover:text-white transition
-        `}
+                          ${isInCurrentPage ? "border-2 border-primary" : ""}
+                          ${isAnswered ? "bg-gray-700 text-white" : ""}
+                          hover:bg-primary hover:text-white transition
+                        `}
                         variant="outline"
                       >
                         {index + 1}
@@ -367,7 +354,7 @@ export default function QuizPage() {
                 className="w-full mt-4"
                 size="lg"
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isSubmited}
               >
                 <Send className="w-4 h-4 mr-2" />
                 {isSubmited
@@ -404,12 +391,18 @@ export default function QuizPage() {
 
                   {(currentPage + 1) * QUESTIONS_PER_PAGE <
                   quiz.questions.length ? (
-                    <Button onClick={() => setCurrentPage((prev) => prev + 1)}>
+                    <Button
+                      onClick={() => setCurrentPage((prev) => prev + 1)}
+                      disabled={isSubmited}
+                    >
                       Trang tiếp
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   ) : (
-                    <Button onClick={handleSubmit} disabled={isSubmitting}>
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={isSubmitting || isSubmited}
+                    >
                       <Send className="w-4 h-4 mr-2" />
                       {isSubmited
                         ? "Đã nộp"
@@ -424,6 +417,7 @@ export default function QuizPage() {
           </div>
         </div>
       </div>
+
       {quizResult && (
         <QuizResultDialog
           open={isResultOpen}

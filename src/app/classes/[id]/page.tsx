@@ -1,5 +1,10 @@
 "use client"
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
@@ -14,6 +19,7 @@ import { AssignmentsTab } from "@/components/classDetails/AssignmentsTab"
 import { getAssignmentsByClassId } from "@/services/assignmentService"
 import { getDocumentsByClassId } from "@/services/documentService"
 import { DocumentsTab } from "@/components/classDetails/DocumentsTab"
+import AssignmentNotificationToast from "@/components/assignment/AssignmentNotificationToast";
 
 export default function ClassDetailPage() {
   const params = useParams()
@@ -113,17 +119,50 @@ export default function ClassDetailPage() {
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            <Link href={redirectPath}>
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Quay lại
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{classData.className}</h1>
-              <p className="text-gray-600">{classData.description}</p>
+          <div className="flex items-center justify-between mb-4">
+            {/* Bên trái: Nút quay lại + Thông tin lớp */}
+            <div className="flex items-center gap-4">
+              <Link href={redirectPath}>
+                <Button variant="ghost" size="sm" onClick={() => router.back()}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Quay lại
+                </Button>
+              </Link>
+
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">{classData.className}</h1>
+                <p className="text-gray-600">{classData.description}</p>
+              </div>
             </div>
+
+
+{
+            (localStorage.role === "student") &&
+            <AssignmentNotificationToast classId={classData.id} />
+}
+            
+            
+            
+            {/* Bên phải: Dropdown lịch học */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default" size="sm">
+                  📅 Lịch học
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href={`/classes/teacher/schedule/create/${classData.id}`}>
+                    ➕ Tạo lịch
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={`/classes/teacher/schedule/session/${classData.id}`}>
+                    👀 Xem lịch
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 

@@ -33,25 +33,27 @@ export default function StudentQuizzesPage() {
     const fetchQuizzes = async () => {
       try {
         const token = localStorage.getItem("accessToken"); // hoặc nơi bạn đang lưu token
-
-        const response = await fetch("http://localhost:8080/api/quizzes", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // thêm access token
-          },
-        });
+        const user = localStorage.getItem("user"); // hoặc nơi bạn đang lưu token
+        const userid = JSON.parse(user).id;
+        const response = await fetch(
+          `http://localhost:8080/api/quizzes/student/${userid}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`, // thêm access token
+            },
+          }
+        );
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log("data ", data);
 
-        const quizzesForClass2 = data.filter((quiz: any) => quiz.classId === 2);
-        setQuizzes(quizzesForClass2);
-        console.log(quizzesForClass2);
+        setQuizzes(data.data);
+        console.log(data);
       } catch (error) {
         console.error("Error fetching quizzes:", error);
       }
@@ -159,7 +161,9 @@ export default function StudentQuizzesPage() {
                           </span>
                         </div>
                       </div>
-                      <Button onClick={() => router.push(`student/${quiz.id}`)}>
+                      <Button
+                        onClick={() => router.push(`student/${quiz.quizId}`)}
+                      >
                         <Play className="h-4 w-4 mr-2" />
                         Bắt đầu làm bài
                       </Button>

@@ -9,18 +9,28 @@ import {
     deleteQuiz,
     fetchQuizById,
     fetchQuizzes,
+    fetchQuizzesByTeacher,
     toQuizCard,
     updateQuiz,
     type QuizFilters,
 } from "./api";
 import { QuizCard } from "@/types/quiz.type";
 
-export function useQuizzesQuery(filters: QuizFilters = {}) {
+export function useQuizzesQuery(filters: QuizFilters = {}, teacherId?: number) {
     return useQuery({
-        queryKey: ["quizzes", filters],
-        queryFn: () => fetchQuizzes(filters),
+        queryKey: ["quizzes", filters, teacherId],
+        queryFn: () => {
+            if (!teacherId) {
+                throw new Error("Teacher ID is required");
+            }
+            return fetchQuizzesByTeacher(teacherId, filters);
+
+        },
         select: (rows): QuizCard[] => rows.map(toQuizCard),
         placeholderData: keepPreviousData,
+        enabled: !!teacherId, // chỉ fetch khi teacherId đã có
+        staleTime: 5 * 60 * 1000, // Cache 5 phút
+        retry: 3,
     });
 }
 

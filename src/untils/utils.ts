@@ -1,6 +1,7 @@
 import { BackendQuizResponse, QuizzFormData } from "@/types/quiz.type";
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { jwtDecode } from "jwt-decode";
 
 export function cn(...inputs: ClassValue[]) {
 
@@ -15,9 +16,8 @@ export function mapBackendToFormData(apiData: BackendQuizResponse): QuizzFormDat
     subject: "",
     startDate: "",
     endDate: "",
-    time: "",
+    timeLimit: "",
     description: "",
-    fileName: "",
 
     questions: apiData.questions.map((q) => ({
       question: q.questionText,
@@ -31,4 +31,24 @@ export function mapBackendToFormData(apiData: BackendQuizResponse): QuizzFormDat
       difficulty: q.difficulty,
     })),
   };
+}
+
+
+interface JwtPayload {
+  id: number;
+  sub: string;
+  roles: { name: string; id: number }[];
+}
+
+export function getCurrentUserId(): number | null {
+  const token = localStorage.getItem("accessToken");
+  if (!token) return null;
+
+  try {
+    const payload: JwtPayload = jwtDecode(token);
+    return payload.id;
+  } catch (e) {
+    console.error("Invalid token", e);
+    return null;
+  }
 }

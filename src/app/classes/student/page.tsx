@@ -26,6 +26,7 @@ import {
   getStudentClasses,
   getClasses,
   createJoinRequest,
+  getClassById,
 } from "@/services/classService";
 import StudentNotificationToast from "@/components/classDetails/StudentNotificationToast";
 
@@ -48,6 +49,7 @@ export default function StudentClassesPage() {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
+      console.log("parsedUser :", parsedUser);
 
       getStudentClasses(parsedUser.userId, currentPage, pageSize)
         .then((res) => {
@@ -76,10 +78,26 @@ export default function StudentClassesPage() {
       return;
     }
     try {
+      // Lấy thông tin chi tiết lớp học trước
+      const classInfo = await getClassById(Number(joinCode));
+
+      // Gửi yêu cầu tham gia lớp
       await createJoinRequest(Number(joinCode), user.userId);
-      alert(
-        "Yêu cầu tham gia lớp đã được gửi, vui lòng đợi giáo viên xác nhận."
-      );
+
+      // Hiển thị thông báo tùy theo join_mode
+      if (classInfo?.join_mode === "AUTO") {
+        alert("Bạn đã tham gia lớp thành công!");
+      } else if (classInfo?.join_mode === "APPROVAL") {
+        alert(
+          "Yêu cầu tham gia lớp đã được gửi, vui lòng đợi giáo viên xác nhận."
+        );
+      } else {
+        // Fallback message nếu không có thông tin join_mode
+        alert(
+          "Yêu cầu tham gia lớp đã được gửi, vui lòng đợi giáo viên xác nhận."
+        );
+      }
+
       setJoinCode("");
     } catch (err) {
       console.error("Lỗi khi gửi yêu cầu tham gia lớp:", err);
@@ -89,10 +107,22 @@ export default function StudentClassesPage() {
 
   const handleJoinFromSearch = async (classId: number) => {
     try {
+      const classInfo = await getClassById(Number(classId));
       await createJoinRequest(classId, user.userId);
-      alert(
-        "Yêu cầu tham gia lớp đã được gửi, vui lòng đợi giáo viên xác nhận."
-      );
+
+      // Hiển thị thông báo tùy theo join_mode
+      if (classInfo?.join_mode === "AUTO") {
+        alert("Bạn đã tham gia lớp thành công!");
+      } else if (classInfo?.join_mode === "APPROVAL") {
+        alert(
+          "Yêu cầu tham gia lớp đã được gửi, vui lòng đợi giáo viên xác nhận."
+        );
+      } else {
+        // Fallback message nếu không có thông tin join_mode
+        alert(
+          "Yêu cầu tham gia lớp đã được gửi, vui lòng đợi giáo viên xác nhận."
+        );
+      }
     } catch (err) {
       console.error("Lỗi khi gửi yêu cầu tham gia lớp:", err);
       alert("Không thể gửi yêu cầu tham gia lớp");

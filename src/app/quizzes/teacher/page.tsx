@@ -42,7 +42,7 @@ export default function TeacherQuizzesPage() {
     isLoading,
     isFetching,
     error,
-  } = useQuizzesQuery(filters);
+  } = useQuizzesQuery(filters, user?.userId);
 
   const getStatusBadge = (status: string, dueDate: string) => {
     const now = new Date();

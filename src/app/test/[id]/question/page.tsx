@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useQuizQuestionsPage } from "../../../quizzes/hook/useQuizQuestionsPage";
 import { useParams, useSearchParams } from "next/navigation";
+import { useQuizQuestionsPage } from "@/app/quizzes/hook/quiz-hooks";
 
 export default function QuizQuestionsTest() {
   const params = useParams();
   const searchParams = useSearchParams();
 
-  const quizId = Number(params.id); // id từ URL path
+  const quizId = Number(params.id);
   const pageParam = Number(searchParams.get("page")) || 1;
   const sizeParam = Number(searchParams.get("size")) || 10;
 
