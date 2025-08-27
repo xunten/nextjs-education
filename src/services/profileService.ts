@@ -3,31 +3,11 @@ import {
   UserProfileDto,
   UpdateUserProfileRequestDto,
   ChangePasswordRequestDto,
+  UserProfileApiResponse,
+  mapUserApiToDto,
 } from "@/types/profile";
 
-// Khai báo interface backend trả về
-interface UserProfileApiResponse {
-  id: number;
-  username: string;
-  email: string;
-  full_name: string;
-  image_url?: string;
-  roles: { id: number; name: string }[];
-}
-
-// Map từ backend -> frontend
-function mapUserApiToDto(data: UserProfileApiResponse): UserProfileDto {
-  return {
-    id: data.id,
-    username: data.username,
-    email: data.email,
-    fullName: data.full_name,
-    imageUrl: data.image_url,
-    roles: data.roles.map((r) => r.name),
-  };
-}
-
-// Fetch profile
+// Lấy profile
 export async function fetchProfile(): Promise<UserProfileDto> {
   const res = await apiClient.get<UserProfileApiResponse>("/profile/me");
   return mapUserApiToDto(res.data);
@@ -46,27 +26,18 @@ export async function updateProfile(
 
 // Upload avatar
 export async function uploadAvatar(file: File): Promise<UserProfileDto> {
-  return new Promise((resolve, reject) => {
+  const base64 = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-
-    reader.onload = async () => {
-      try {
-        const base64 = reader.result as string;
-
-        // Gọi API backend
-        const res = await apiClient.post<UserProfileDto>("/profile/avatar", {
-          imageUrl: base64,
-        });
-
-        resolve(res.data); // Trả về UserProfileDto
-      } catch (err) {
-        reject(err);
-      }
-    };
-
-    reader.onerror = (err) => reject(err);
-    reader.readAsDataURL(file); // chuyển file sang Base64
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
+
+  const res = await apiClient.post<UserProfileApiResponse>("/profile/avatar", {
+    avatarBase64: base64,
+  });
+
+  return mapUserApiToDto(res.data);
 }
 
 // Đổi mật khẩu

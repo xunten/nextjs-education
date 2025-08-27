@@ -60,7 +60,9 @@ export default function ProfileModal({
   const [loadingSave, setLoadingSave] = useState(false);
   const [loadingPassword, setLoadingPassword] = useState(false);
   const [loadingUpload, setLoadingUpload] = useState(false);
-  const [previewImage, setPreviewImage] = useState(user.imageUrl);
+  const [previewImage, setPreviewImage] = useState<string>(
+    user.avatarBase64 || ""
+  );
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -69,7 +71,7 @@ export default function ProfileModal({
   useEffect(() => {
     if (isOpen) {
       setFullName(user.fullName || "");
-      setPreviewImage(user.imageUrl);
+      setPreviewImage(user.avatarBase64 || "");
       setShowPasswordForm(false);
       reset();
     }
@@ -109,7 +111,7 @@ export default function ProfileModal({
       toast.success("Cập nhật thông tin thành công!");
       onUserUpdate?.(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
-      setPreviewImage(updatedUser.imageUrl);
+      setPreviewImage(updatedUser.avatarBase64 || "");
       reset();
       onClose();
     } catch (error: any) {
@@ -137,15 +139,17 @@ export default function ProfileModal({
       const updatedUser = await profileService.uploadAvatar(file);
       onUserUpdate?.(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
+      setPreviewImage(updatedUser.avatarBase64 || "");
       toast.success("Cập nhật ảnh thành công!");
     } catch (error: any) {
       console.error("Upload error:", error);
       toast.error(error.message || "Cập nhật thất bại");
-      setPreviewImage(""); // Reset preview nếu lỗi
+      setPreviewImage("");
     } finally {
       setLoadingUpload(false);
     }
   };
+
   const onSubmitPassword = async (
     data: ChangePasswordRequestDto & { confirmPassword: string }
   ) => {
@@ -194,14 +198,16 @@ export default function ProfileModal({
                 <CardTitle className="text-green-600">Ảnh đại diện</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center space-y-4">
-                <Avatar className="w-24 h-24">
-                  <AvatarImage src="https://imgcdn.stablediffusionweb.com/2024/5/15/d12adb3e-ae31-4cc5-a659-5fc8375dc635.jpg" />
-                  {/* <AvatarImage src={previewImage} alt={user.username} /> */}
-                  {/* <AvatarFallback className="text-2xl bg-green-100 text-green-600">
+                <Avatar className="w-24 h-24 ">
+                  <AvatarImage
+                    src={previewImage || user.avatarBase64 || ""}
+                    alt={user.username}
+                  />
+                  <AvatarFallback className="text-2xl bg-green-100 text-green-600">
                     {user.fullName?.charAt(0).toUpperCase() ||
                       user.username?.charAt(0).toUpperCase() ||
                       "U"}
-                  </AvatarFallback> */}
+                  </AvatarFallback>
                 </Avatar>
 
                 {/* Input file ẩn */}
@@ -216,13 +222,13 @@ export default function ProfileModal({
                 {/* Button trigger input */}
                 <Button
                   variant="outline"
-                  className={`border-green-500 text-green-600 hover:bg-green-50 bg-transparent ${
+                  className={`border-green-500 text-green-600 hover:bg-green-50 bg-transparent cursor-pointer${
                     loadingUpload ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                   onClick={() => fileInputRef.current?.click()}
                   disabled={loadingUpload}
                 >
-                  <Upload className="w-4 h-4 mr-2" />
+                  <Upload className="w-4 h-4 mr-2 " />
                   {loadingUpload ? "Đang tải lên..." : "Tải ảnh lên"}
                 </Button>
                 <p className="text-xs text-gray-500 text-center">
@@ -240,7 +246,7 @@ export default function ProfileModal({
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowPasswordForm(true)}
-                      className="text-green-600 hover:bg-green-50"
+                      className="text-green-600 hover:bg-green-50 cursor-pointer"
                     >
                       Thay đổi
                     </Button>
@@ -269,7 +275,7 @@ export default function ProfileModal({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent cursor-pointer"
                           onClick={() => setShowOldPassword(!showOldPassword)}
                         >
                           {showOldPassword ? (
@@ -302,7 +308,7 @@ export default function ProfileModal({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent cursor-pointer"
                           onClick={() => setShowNewPassword(!showNewPassword)}
                         >
                           {showNewPassword ? (
@@ -329,14 +335,14 @@ export default function ProfileModal({
                           id="confirmPassword"
                           type={showConfirmPassword ? "text" : "password"}
                           {...register("confirmPassword")}
-                          className="pr-10 focus:ring-green-500 focus:border-green-500"
+                          className="pr-10 focus:ring-green-500 focus:border-green-500 "
                           placeholder="Nhập lại mật khẩu mới"
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent cursor-pointer"
                           onClick={() =>
                             setShowConfirmPassword(!showConfirmPassword)
                           }
@@ -358,7 +364,7 @@ export default function ProfileModal({
                     <div className="flex gap-2">
                       <Button
                         type="submit"
-                        className={`flex-1 bg-green-600 hover:bg-green-700 text-white ${
+                        className={`flex-1 bg-green-600 hover:bg-green-700 text-white  cursor-pointer${
                           loadingPassword ? "opacity-50 cursor-not-allowed" : ""
                         }`}
                         disabled={loadingPassword}
@@ -368,7 +374,7 @@ export default function ProfileModal({
                       <Button
                         type="button"
                         variant="outline"
-                        className="flex-1"
+                        className="flex-1 cursor-pointer"
                         onClick={() => {
                           setShowPasswordForm(false);
                           reset();
@@ -462,7 +468,7 @@ export default function ProfileModal({
                 <div className="flex gap-3 pt-3">
                   <Button
                     onClick={handleSaveProfile}
-                    className={`flex-1 bg-green-600 hover:bg-green-700 text-white ${
+                    className={`flex-1 bg-green-600 hover:bg-green-700 text-white cursor-pointer ${
                       loadingSave || !fullName.trim()
                         ? "opacity-50 cursor-not-allowed"
                         : ""
@@ -474,7 +480,7 @@ export default function ProfileModal({
                   <Button
                     onClick={handleClose}
                     variant="outline"
-                    className="flex-1 border-gray-300 text-gray-600 hover:bg-gray-50 bg-transparent"
+                    className="flex-1 border-gray-300 text-gray-600 hover:bg-gray-50 bg-transparent cursor-pointer"
                     disabled={loadingSave || loadingPassword || loadingUpload}
                   >
                     Đóng

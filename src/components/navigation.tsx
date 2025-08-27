@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -122,7 +122,11 @@ export default function Navigation() {
                     variant="ghost"
                     className="relative h-8 w-8 rounded-full"
                   >
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8 cursor-pointer">
+                      <AvatarImage
+                        src={user.avatarBase64 || undefined}
+                        alt={user.username}
+                      />
                       <AvatarFallback>
                         {user.username?.charAt(0).toUpperCase() || "U"}
                       </AvatarFallback>
@@ -131,7 +135,7 @@ export default function Navigation() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end">
                   <div className="flex flex-col gap-1 p-2">
-                    <p className="font-medium">{user.username}</p>
+                    <p className="font-medium">{user.fullName}</p>
                     <p className="truncate text-sm text-muted-foreground">
                       {user.email}
                     </p>
@@ -139,12 +143,18 @@ export default function Navigation() {
                       {currentRole === "teacher" ? "Giáo viên" : "Học sinh"}
                     </p>
                   </div>
-                  <DropdownMenuItem onClick={() => setIsProfileModalOpen(true)}>
+                  <DropdownMenuItem
+                    onClick={() => setIsProfileModalOpen(true)}
+                    className="mt-1 cursor-pointer"
+                  >
                     <CircleUser className="mr-2 h-4 w-4" />
                     View profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="mt-1 cursor-pointer"
+                  >
+                    <LogOut className="mr-2 h-4 w-4 " />
                     Đăng xuất
                   </DropdownMenuItem>
                 </DropdownMenuContent>

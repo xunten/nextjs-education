@@ -24,7 +24,7 @@ export interface LoginResponseDto {
   username: string;
   email: string;
   fullName: string;
-  imageUrl?: string;
+  avatarBase64?: string;
   roles: string[];
   accessToken: string;
   refreshToken?: string;
@@ -33,7 +33,7 @@ export interface LoginResponseDto {
 export interface GoogleLoginRequestDto {
   name: string;
   email: string;
-  imageUrl: string;
+  avatarBase64: string;
 }
 
 export interface GoogleLoginWithCredentialRequestDto {
