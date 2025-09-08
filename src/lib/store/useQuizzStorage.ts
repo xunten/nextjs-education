@@ -10,8 +10,7 @@ type QuizzStore = {
 
 const defaultData: QuizzFormData = {
     title: "",
-    grade: "",
-    subject: "",
+    classId: 0,
     startDate: "",
     endDate: "",
     timeLimit: "",

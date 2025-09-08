@@ -99,10 +99,28 @@ export const createClass = (payload: {
   description: string;
   teacherId: number;
   subjectId: number;
+  join_mode: 'AUTO' | 'APPROVAL' ;
 }) => {
   console.log("Payload tạo lớp:", payload);
   return apiClient.post(`/auth/classes`, payload);
 };
+export const updateClass = (
+  classId: number,
+  payload: {
+    className: string;
+    schoolYear: number;
+    semester: string;
+    description: string;
+    teacherId: number;
+    subjectId: number;
+    join_mode: 'AUTO' | 'APPROVAL';
+  }
+) => {
+  console.log("Payload cập nhật lớp:", payload);
+  return apiClient.put(`/auth/classes/${classId}`, payload);
+};
+
+
 // export const createClass = async (payload: {
 //   className: string;
 //   schoolYear: number;
@@ -129,6 +147,10 @@ export const createClass = (payload: {
 // };
 
 
+export const deleteClass = async (id: number) => {
+  const res = await apiClient.delete(`/auth/classes/${id}`);
+  return res.data;
+};
 export const joinClass = async (classId: number, studentId: number) => {
   const response = await apiClient.post("/auth/classes/add-student", {
     classId,

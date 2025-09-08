@@ -17,6 +17,7 @@ export interface ClassProgressDTO {
 export interface StudentDashboardResponse {
   enrolledClasses: number;
   totalAssignments: number;
+  avgScore: number;
   completedAssignments: number;
   upcomingDeadlines: UpcomingAssignmentDto[];
   classProgress: ClassProgressDTO[];

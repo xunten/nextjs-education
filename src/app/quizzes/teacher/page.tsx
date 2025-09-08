@@ -32,17 +32,13 @@ export default function TeacherQuizzesPage() {
   const [status, setStatus] = useState<string | undefined>();
   const [page, setPage] = useState(1);
 
-  const filters: QuizFilters = useMemo(
-    () => ({ page, pageSize: 10, status, search }),
-    [page, status, search]
-  );
-
   const {
     data: quizzes = [],
     isLoading,
     isFetching,
     error,
-  } = useQuizzesQuery(filters, user?.userId);
+  } = useQuizzesQuery();
+  console.log("quizzes :", quizzes);
 
   const getStatusBadge = (status: string, dueDate: string) => {
     const now = new Date();
@@ -87,7 +83,7 @@ export default function TeacherQuizzesPage() {
             Tạo và theo dõi bài kiểm tra trắc nghiệm
           </p>
         </div>
-        <Link href="teacher/quizzCreate">
+        <Link href="teacher/createQuiz">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
             Tạo bài kiểm tra mới

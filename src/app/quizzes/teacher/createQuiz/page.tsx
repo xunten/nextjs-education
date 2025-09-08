@@ -28,35 +28,82 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { readDocxFile } from "./ReadDocxFile";
 import { useRouter } from "next/navigation";
 import { useQuizzStorage } from "../../../../lib/store/useQuizzStorage";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { QuizzFormData } from "@/types/quiz.type";
+import { Question, QuizzFormData } from "@/types/quiz.type";
 import { QuizForm } from "@/components/forms/QuizForm";
 import { quizFormSchema } from "@/lib/validation/quizFormSchema";
 import { useTeacherClasses } from "../../hook/useTeacherClasses";
+import { QuizFormm } from "./QuizForm";
 import Navigation from "@/components/navigation";
+
 interface QuizFormDataExtended extends QuizzFormData {
   files: File[];
   fileName: string;
   classId: number;
   createdBy: number;
 }
+const token = localStorage.getItem("accessToken");
+// API response type
+
+interface ApiResponse {
+  questions: Question[];
+}
+
+// Function to call API and extract questions
+const extractQuestionsFromFiles = async (
+  files: File[]
+): Promise<Question[]> => {
+  const formData = new FormData();
+
+  // Add all files to FormData
+  files.forEach((file) => {
+    formData.append("file", file);
+  });
+  // hoặc lấy từ context/store
+
+  try {
+    const response = await fetch(
+      "http://localhost:8080/api/files/extract-questions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result: ApiResponse = await response.json();
+    console.log("result :", result);
+
+    return result.questions;
+  } catch (error) {
+    console.error("Error extracting questions:", error);
+    throw error;
+  }
+};
 
 export default function CreateQuizzPage() {
   const router = useRouter();
   const { setData } = useQuizzStorage();
+  const [isLoading, setIsLoading] = useState(false);
+
   const userStr =
     typeof window !== "undefined" ? localStorage.getItem("user") : null;
   const userId = userStr ? JSON.parse(userStr).userId : null;
 
-  const { data: classes = [], isLoading } = useTeacherClasses(userId);
+  const { data: classes = [], isLoading: classesLoading } =
+    useTeacherClasses(userId);
 
   const defaultValues: QuizFormDataExtended = {
     title: "",
-    subject: "",
     startDate: new Date().toISOString().split("T")[0],
     endDate: new Date().toISOString().split("T")[0],
     timeLimit: "40",
@@ -69,40 +116,51 @@ export default function CreateQuizzPage() {
   };
 
   const onsubmit = async (data: QuizFormDataExtended) => {
-    console.log(" Submit data:", data);
+    console.log("Submit data:", data);
+
     if (!data.files || data.files.length === 0) {
       toast.error("Vui lòng chọn ít nhất 1 file DOCX");
       return;
     }
 
-    try {
-      let combinedQuestions: any[] = [];
-      for (const file of data.files) {
-        const questions = await readDocxFile(file);
-        combinedQuestions = [...combinedQuestions, ...questions];
-      }
+    setIsLoading(true);
 
-      if (combinedQuestions.length === 0) {
+    try {
+      const extractedQuestions = await extractQuestionsFromFiles(data.files);
+
+      if (extractedQuestions.length === 0) {
         toast.error("Không tìm thấy câu hỏi hợp lệ trong file.");
         return;
       }
 
       setData({
-        ...data,
+        title: data.title,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        classId: data.classId,
+        createdBy: data.createdBy,
+        timeLimit: data.timeLimit,
+        description: data.description,
         fileName: data.files.map((f) => f.name).join(", "),
-        questions: combinedQuestions,
+        questions: extractedQuestions,
       });
 
-      router.push("/quizzes/teacher/quizzPreview");
+      toast.success(
+        `Đã trích xuất thành công ${extractedQuestions.length} câu hỏi!`
+      );
+      router.push("/quizzes/teacher/preview");
     } catch (error) {
-      console.error(error);
-      toast.error("Đã xảy ra lỗi khi đọc file.");
+      console.error("Error processing files:", error);
+      toast.error("Đã xảy ra lỗi khi xử lý file. Vui lòng thử lại.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleAIGen = () => {
     router.push("/quizzes/teacher/AIgenquiz");
   };
+
   return (
     <div>
       <Navigation />
@@ -132,11 +190,12 @@ export default function CreateQuizzPage() {
               </div>
             </CardHeader>
             <CardContent className=" space-y-5">
-              <QuizForm
+              <QuizFormm
                 defaultValues={defaultValues}
                 schema={quizFormSchema}
                 onSubmit={onsubmit}
                 classOptions={classes}
+                isLoading={isLoading}
               />
             </CardContent>
           </Card>

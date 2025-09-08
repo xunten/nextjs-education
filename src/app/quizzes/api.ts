@@ -8,7 +8,12 @@ export type QuizFilters = {
     status?: string;
     search?: string;
 };
-
+export type ApiResp<T> = {
+    success: boolean;
+    message: string;
+    data: T;
+    timestamp: number;
+};
 export function buildQueryString(filters: QuizFilters) {
     const qs = new URLSearchParams();
     if (filters.page) qs.set("page", String(filters.page));
@@ -47,11 +52,10 @@ export async function fetchQuizzes(filters: QuizFilters = {}) {
     const data = await api<any>(`/api/quizzes${qs}`);
     return data ?? [];
 }
-export async function fetchQuizzesByTeacher(teacherId: number, filters: QuizFilters = {}) {
-    // Nếu endpoint của bạn là /api/quizzes/teacher/{teacherId}
-    const qs = buildQueryString(filters);
-    const data = await api<any>(`/api/quizzes/teacher/${teacherId}${qs}`);
-    return data ?? [];
+export async function fetchQuizzesByTeacher() {
+    const data = await api<ApiResp<any[]>>(`/api/quizzes/teacher`);
+    console.log('data :', data);
+    return data.data ?? [];
 }
 export async function fetchQuizById(id: number) {
     return api<any>(`/api/quizzes/${id}`);
@@ -92,3 +96,26 @@ export async function deleteQuiz(id: number) {
         method: "DELETE",
     });
 }
+export class ApiError extends Error {
+    status?: number;
+    body?: unknown;
+    constructor(msg: string, status?: number, body?: unknown) {
+        super(msg);
+        this.status = status;
+        this.body = body;
+    }
+}
+
+// utils/api-error.ts
+export async function handleFetchError(res: Response) {
+    // Server trả JSON dạng { success:false, message, ... }
+    let payload: any = null;
+    try { payload = await res.json(); } catch { /* ignore */ }
+
+    const msg =
+        payload?.message ||
+        `Request failed with status ${res.status}`;
+
+    throw new ApiError(msg, res.status, payload);
+}
+

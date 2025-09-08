@@ -90,8 +90,6 @@ export const useAuth = () => {
     };
 
     const login = (userData: any) => {
-        console.log(userData);
-
         localStorage.setItem('accessToken', userData.accessToken);
         localStorage.setItem('user', JSON.stringify(userData));
 

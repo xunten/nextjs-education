@@ -16,19 +16,16 @@ import {
 } from "./api";
 import { QuizCard } from "@/types/quiz.type";
 
-export function useQuizzesQuery(filters: QuizFilters = {}, teacherId?: number) {
+export function useQuizzesQuery() {
     return useQuery({
-        queryKey: ["quizzes", filters, teacherId],
+        queryKey: ["quizzes"],
         queryFn: () => {
-            if (!teacherId) {
-                throw new Error("Teacher ID is required");
-            }
-            return fetchQuizzesByTeacher(teacherId, filters);
+
+            return fetchQuizzesByTeacher();
 
         },
         select: (rows): QuizCard[] => rows.map(toQuizCard),
         placeholderData: keepPreviousData,
-        enabled: !!teacherId, // chỉ fetch khi teacherId đã có
         staleTime: 5 * 60 * 1000, // Cache 5 phút
         retry: 3,
     });

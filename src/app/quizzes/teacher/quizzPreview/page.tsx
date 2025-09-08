@@ -100,7 +100,7 @@ export default function QuizEditPage() {
                 <div>
                   <Label>Lớp</Label>
                   <Input
-                    value={quiz.grade}
+                    value={quiz.className}
                     onChange={(e) => setData({ grade: e.target.value })}
                     className="border-green-500/30"
                   />

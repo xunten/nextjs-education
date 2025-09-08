@@ -33,7 +33,6 @@ export default function Navigation() {
   const [user, setUser] = useState<any>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  // Lấy user từ localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
@@ -45,7 +44,6 @@ export default function Navigation() {
     router.push("/auth/login");
   };
 
-  // Callback để cập nhật user khi profile thay đổi
   const handleUserUpdate = (updatedUser: any) => {
     setUser(updatedUser);
     localStorage.setItem("user", JSON.stringify(updatedUser));

@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React from "react";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Navigation from "@/components/navigation";
@@ -15,53 +15,57 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Users, 
-  ChevronLeft, 
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
+  ChevronLeft,
   ChevronRight,
-  UserCheck 
+  UserCheck,
 } from "lucide-react";
 import { getClassWithSessions } from '@/services/classScheduleService';
 import SessionListView from '@/components/classSchedule/SessionListView';
 import WeeklyTimetableView from '@/components/classSchedule/WeeklyTimetableView';
+import { getClassById } from '@/services/classService';
 
 
 
 // Utility function
-const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
+const cn = (...classes: string[]) => classes.filter(Boolean).join(" ");
 
 // Format date functions
 const formatDate = (date: Date) => {
-  return date.toLocaleDateString('vi-VN', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  return date.toLocaleDateString("vi-VN", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 };
 
 const formatDateShort = (date: Date) => {
-  return date.toLocaleDateString('vi-VN');
+  return date.toLocaleDateString("vi-VN");
 };
 
 // Get day of week from date
 const getDayOfWeek = (dateString: string) => {
   const date = new Date(dateString);
-  const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  const days = [
+    "SUNDAY",
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY",
+  ];
   return days[date.getDay()];
 };
 const dayOfWeekMapping: { [key: string]: string } = {
   MONDAY: "Thứ Hai",
-  TUESDAY: "Thứ Ba", 
+  TUESDAY: "Thứ Ba",
   WEDNESDAY: "Thứ Tư",
   THURSDAY: "Thứ Năm",
   FRIDAY: "Thứ Sáu",
@@ -72,7 +76,7 @@ const dayOfWeekMapping: { [key: string]: string } = {
 const dayOfWeekShort: { [key: string]: string } = {
   SUNDAY: "CN",
   MONDAY: "T2",
-  TUESDAY: "T3", 
+  TUESDAY: "T3",
   WEDNESDAY: "T4",
   THURSDAY: "T5",
   FRIDAY: "T6",
@@ -80,7 +84,6 @@ const dayOfWeekShort: { [key: string]: string } = {
 };
 
 // Mock function to get sessions - replace with actual API call
-
 
 interface SessionData {
   id: number;
@@ -90,20 +93,18 @@ interface SessionData {
   startPeriod: number;
   endPeriod: number;
   location: string;
-  status: 'SCHEDULED' | 'COMPLETED' | 'PENDING' | 'CANCELLED';
+  status: "SCHEDULED" | "COMPLETED" | "PENDING" | "CANCELLED";
   note?: string;
 }
 
 // Session List Component
 
-
 // Weekly Timetable Component
-
 
 export default function ClassSchedulePage() {
   const params = useParams();
   const id = params.id as string;
-  
+
   const [classData, setClassData] = useState<any>(null);
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,14 +113,18 @@ export default function ClassSchedulePage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch class info with sessions
         const data = await getClassWithSessions(id);
-        setClassData(data);
+        getClassById(Number(id))
+                 .then((data) => {
+                   console.log("Classes data:", data);
+                   setClassData(data)
+                 })
+                 .catch((err) => console.error("Lỗi khi lấy lớp:", err)); 
         setSessions(data || []);
-        
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
@@ -157,9 +162,11 @@ export default function ClassSchedulePage() {
                     Lịch học - {classData?.className || `Lớp ${id}`}
                   </CardTitle>
                   <div className="text-gray-600 mt-2">
-                    <span>Giáo viên: {classData?.teacher?.fullName || 'N/A'}</span>
+                    <span>
+                      Giáo viên: {classData?.teacher?.fullName || "N/A"}
+                    </span>
                     <span className="mx-2">•</span>
-                    <span>Môn học: {classData?.subject?.name || 'N/A'}</span>
+                    <span>Môn học: {classData?.subject?.name || "N/A"}</span>
                     <span className="mx-2">•</span>
                     <span>Tổng số buổi: {sessions.length}</span>
                   </div>
@@ -167,7 +174,7 @@ export default function ClassSchedulePage() {
                 <div className="text-right">
                   <div className="text-sm text-gray-500">Năm học</div>
                   <div className="font-semibold">{classData?.schoolYear || 'N/A'}</div>
-                  <div className="text-sm text-gray-500 mt-1">Học kỳ {classData?.semester || 'N/A'}</div>
+                  <div className="text-sm text-gray-500 mt-1">{classData?.semester || 'N/A'}</div>
                 </div>
               </div>
             </CardHeader>
@@ -179,11 +186,11 @@ export default function ClassSchedulePage() {
               <TabsTrigger value="list">Danh sách buổi học</TabsTrigger>
               <TabsTrigger value="timetable">Thời khóa biểu tuần</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="list">
               <SessionListView sessions={sessions} classId={id} />
             </TabsContent>
-            
+
             <TabsContent value="timetable">
               <WeeklyTimetableView sessions={sessions} />
             </TabsContent>

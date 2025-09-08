@@ -1,8 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 import { ArrowLeft, CheckCircle2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,20 +11,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { QuizEditor } from "@/components/editor/quiz-editor";
 import { ConfirmLeaveDialog } from "@/components/shared/confirm-leave-dialog";
 import { useQuizzStorage } from "@/lib/store/useQuizzStorage";
-import { createQuiz } from "@/app/quizzes/api";
-import { useCreateQuizMutation } from "@/app/quizzes/hooks";
+import { useRouter } from "next/navigation";
+import { useApproveQuiz } from "../../hook/quiz-hooks";
 
 export default function QuizEditPage() {
   const router = useRouter();
   const { data: quiz, setData, reset } = useQuizzStorage();
-  const [showConfirm, setShowConfirm] = useState(false);
+  console.log("quiz :", quiz);
 
-  useEffect(() => {
-    if (!quiz || !quiz.questions.length) {
-      toast.error("Không có dữ liệu quiz. Vui lòng tạo trước.");
-    }
-  }, [quiz, router]);
-  console.log("data ", quiz.questions);
+  const approveMutation = useApproveQuiz();
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const title = useMemo(() => {
     const n = quiz?.questions.length ?? 0;
@@ -37,16 +31,18 @@ export default function QuizEditPage() {
     setShowConfirm(true);
   }
 
-  const handleQuestions = quiz.questions.map((q) => ({
-    questionText: q.question,
-    correctOption: q.answer ?? "",
-    score: 1,
-    options: q.options.map((opt) => ({
-      optionLabel: opt.optionLabel,
-      optionText: opt.optionText,
-    })),
-  }));
-
+  async function onApprove() {
+    approveMutation.mutate(quiz, {
+      onSuccess: (result) => {
+        console.log("Duyệt quiz thành công:", result);
+        useQuizzStorage.getState().reset();
+        router.push("/quizzes/teacher");
+      },
+      onError: (error) => {
+        console.error("Gửi quiz thất bại:", error);
+      },
+    });
+  }
   return (
     <main className="min-h-dvh bg-white">
       <header className="sticky top-0 z-30 border-b bg-white/80 backdrop-blur">
@@ -75,9 +71,12 @@ export default function QuizEditPage() {
               <Save className="mr-2 h-4 w-4" />
               Lưu tất cả
             </Button>
-            <Button className="bg-green-500 text-white hover:bg-green-600 disabled:opacity-60">
+            <Button
+              onClick={onApprove}
+              className="bg-green-500 text-white hover:bg-green-600"
+            >
               <CheckCircle2 className="mr-2 h-4 w-4" />
-              Duyệt quiz
+              {approveMutation.isPending ? "Đang gửi..." : "Duyệt quiz"}
             </Button>
           </div>
         </div>
@@ -85,7 +84,6 @@ export default function QuizEditPage() {
 
       <section className="mx-auto max-w-6xl px-4 py-6">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-10">
-          {/* Left: Quiz Info Form */}
           <div className="md:col-span-3 space-y-4">
             <Card className="border-green-500/20">
               <CardHeader>
@@ -97,32 +95,24 @@ export default function QuizEditPage() {
                   <Input
                     value={quiz.title}
                     onChange={(e) => setData({ title: e.target.value })}
-                    className="border-green-500/30 focus:ring-green-500"
+                    className="border-green-500/30 focus:ring-green-500 mt-2"
                   />
                 </div>
                 <div>
-                  <Label>Lớp</Label>
+                  <Label>ID lớp</Label>
                   <Input
-                    value={quiz.grade}
-                    onChange={(e) => setData({ grade: e.target.value })}
-                    className="border-green-500/30"
+                    value={quiz.classId}
+                    className="border-green-500/30 mt-2"
                   />
                 </div>
-                <div>
-                  <Label>Môn học</Label>
-                  <Input
-                    value={quiz.subject}
-                    onChange={(e) => setData({ subject: e.target.value })}
-                    className="border-green-500/30"
-                  />
-                </div>
+
                 <div>
                   <Label>Thời gian làm (phút)</Label>
                   <Input
                     type="number"
-                    value={quiz.time}
-                    onChange={(e) => setData({ time: e.target.value })}
-                    className="border-green-500/30"
+                    value={quiz.timeLimit}
+                    onChange={(e) => setData({ timeLimit: e.target.value })}
+                    className="border-green-500/30 mt-2"
                   />
                 </div>
                 <div>
@@ -130,26 +120,8 @@ export default function QuizEditPage() {
                   <Textarea
                     value={quiz.description}
                     onChange={(e) => setData({ description: e.target.value })}
-                    className="border-green-500/30"
+                    className="border-green-500/30 mt-2"
                     rows={4}
-                  />
-                </div>
-                <div>
-                  <Label>Thời gian bắt đầu</Label>
-                  <Input
-                    type="datetime-local"
-                    value={quiz.startDate ?? ""} // lưu dạng 'YYYY-MM-DDTHH:mm'
-                    onChange={(e) => setData({ startDate: e.target.value })}
-                    className="border-green-500/30"
-                  />
-                </div>
-                <div>
-                  <Label>Thời gian kết thúc</Label>
-                  <Input
-                    type="datetime-local"
-                    value={quiz.endDate ?? ""} // lưu dạng 'YYYY-MM-DDTHH:mm'
-                    onChange={(e) => setData({ endDate: e.target.value })}
-                    className="border-green-500/30"
                   />
                 </div>
               </CardContent>
@@ -169,14 +141,13 @@ export default function QuizEditPage() {
         </div>
       </section>
 
-      {/* Confirm Leave */}
       <ConfirmLeaveDialog
         open={showConfirm}
         onCancel={() => setShowConfirm(false)}
         onConfirm={() => {
           setShowConfirm(false);
           reset();
-          router.push("/");
+          router.back();
         }}
       />
     </main>

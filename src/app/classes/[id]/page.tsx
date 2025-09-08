@@ -33,18 +33,19 @@ export default function ClassDetailPage() {
   const [activeTab, setActiveTab] = useState("overview")
   const [redirectPath, setRedirectPath] = useState("/classes")
 
-  // useEffect(() => {
-  //   // Lấy user từ localStorage
-  //   const userData = JSON.parse(localStorage.getItem("user") || "{}")
-  //   setUser(userData)
+  useEffect(() => {
+    // Lấy user từ localStorage
+    // const userData = JSON.parse(localStorage.getItem("role") || "{}")
+    // setUser(userData)
 
-  //   // Xác định đường dẫn quay lại theo vai trò
-  //   if (userData?.role === "teacher") {
-  //     setRedirectPath("/classes/teacher")
-  //   } else if (userData?.role === "student") {
-  //     setRedirectPath("/classes/student")
-  //   }
-  // }, [])
+
+    // // Xác định đường dẫn quay lại theo vai trò
+    // if (userData?.role === "teacher") {
+    //   setRedirectPath("/classes/teacher")
+    // } else if (userData?.role === "student") {
+    //   setRedirectPath("/classes/student")
+    // }
+  }, [])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -142,7 +143,6 @@ export default function ClassDetailPage() {
 }
             
             
-            
             {/* Bên phải: Dropdown lịch học */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -151,11 +151,13 @@ export default function ClassDetailPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {(localStorage.role === "teacher") &&
                 <DropdownMenuItem asChild>
                   <Link href={`/classes/teacher/schedule/create/${classData.id}`}>
                     ➕ Tạo lịch
                   </Link>
                 </DropdownMenuItem>
+                  }
                 <DropdownMenuItem asChild>
                   <Link href={`/classes/teacher/schedule/session/${classData.id}`}>
                     👀 Xem lịch

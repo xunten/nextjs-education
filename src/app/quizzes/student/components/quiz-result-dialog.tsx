@@ -146,7 +146,7 @@ export function QuizResultDialog({
                     scorePercentage
                   )}`}
                 >
-                  {data.score}/{data.totalQuestions}
+                  {data.score}/10
                 </div>
                 <Badge
                   variant="secondary"
@@ -215,7 +215,7 @@ export function QuizResultDialog({
             </Button>
             <Button
               className="flex-1 bg-green-600 hover:bg-green-700"
-              onClick={() => setOpen(false)}
+              onClick={() => onOpenChange(false)}
             >
               Đóng
             </Button>

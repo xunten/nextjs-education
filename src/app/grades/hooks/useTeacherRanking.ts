@@ -32,7 +32,7 @@ export function useTeacherRanking(teacherId: number) {
     return useQuery<StudentRanking[]>({
         queryKey: ["teacher-ranking", teacherId],
         queryFn: () =>
-            apiClient<StudentRanking[]>(`/api/stats/teacher/${teacherId}/ranking`),
+            apiClient<StudentRanking[]>(`/stats/teacher/38/ranking`),
         staleTime: 1000 * 60 * 2,
     });
 }

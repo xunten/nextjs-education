@@ -34,7 +34,8 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { Plus, X, Calendar as CalendarIcon, Eye } from "lucide-react";
 import { createClassSchedule, getAllLocations } from "@/services/classScheduleService";
-import { toast } from "sonner";
+import { toast } from 'react-toastify';
+// import { toast } from "sonner";
 
 // Utility function thay thế cho cn
 const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
@@ -91,17 +92,22 @@ interface SlotType {
 }
 
 interface FormData {
-  startDate: Date | undefined;
-  endDate: Date | undefined;
+  startDate: Date | null;
+  endDate: Date | null;
   slots: SlotType[];
 }
 
 // Schema validation cho form
-const schema = yup.object().shape({
-  startDate: yup.date().nullable().required("Vui lòng chọn ngày bắt đầu"),
+const schema: yup.ObjectSchema<FormData> = yup.object({
+  startDate: yup
+    .date()
+    .nullable()
+    .typeError("Vui lòng chọn ngày bắt đầu")
+    .required("Vui lòng chọn ngày bắt đầu"),
   endDate: yup
     .date()
     .nullable()
+    .typeError("Vui lòng chọn ngày kết thúc")
     .required("Vui lòng chọn ngày kết thúc")
     .test('is-after-start', 'Ngày kết thúc phải sau ngày bắt đầu', function(value) {
       const startDate = this.parent.startDate;
@@ -111,7 +117,7 @@ const schema = yup.object().shape({
       return true;
     }),
   slots: yup.array().of(
-    yup.object().shape({
+    yup.object({
       dayOfWeek: yup.string().required("Vui lòng chọn ngày trong tuần"),
       startPeriod: yup
         .number()
@@ -123,9 +129,13 @@ const schema = yup.object().shape({
         .typeError("Tiết kết thúc phải là số")
         .required("Vui lòng nhập tiết kết thúc")
         .min(yup.ref("startPeriod"), "Tiết kết thúc phải sau tiết bắt đầu"),
-      locationId: yup.number().nullable().required("Vui lòng chọn địa điểm").typeError("Vui lòng chọn địa điểm"),
+      locationId: yup
+        .number()
+        .nullable()
+        .typeError("Vui lòng chọn địa điểm")
+        .required("Vui lòng chọn địa điểm"),
     })
-  ),
+  ).required("Vui lòng thêm ít nhất một buổi học").default([]),
 });
 
 const dayOfWeekMapping: { [key: string]: string } = {
@@ -247,12 +257,18 @@ export default function ClassSchedulePage() {
       };
       console.log("Payload gửi đi:", payload);
       await createClassSchedule(payload);
-      toast.success("Tạo lịch học thành công!");
-      router.push(`/classes/${classId}`);
-    } catch (err) {
-      console.error("Lỗi khi tạo lịch học:", err);
+    toast.success("Tạo lịch học thành công!");
+    router.push(`/classes/${classId}`);
+  } catch (err: any) {
+    console.error("Lỗi khi tạo lịch học:", err);
+
+    // Nếu backend trả message "Lớp này đã có lịch học" thì hiển thị cảnh báo
+    if (err.response?.status === 400 || err.response?.status === 409) {
+      toast.error(err.response.data?.message || "Lớp này đã có lịch học, không thể tạo mới.");
+    } else {
       toast.error("Có lỗi xảy ra khi tạo lịch học.");
     }
+  }
   };
 
   return (
@@ -274,7 +290,7 @@ export default function ClassSchedulePage() {
                   <Input
                     type="date"
                     onChange={(e) => {
-                      const dateValue = e.target.value ? new Date(e.target.value) : undefined;
+                      const dateValue = e.target.value ? new Date(e.target.value) : null;
                       setValue("startDate", dateValue);
                     }}
                     value={startDate ? startDate.toISOString().split('T')[0] : ''}
@@ -292,7 +308,7 @@ export default function ClassSchedulePage() {
                   <Input
                     type="date"
                     onChange={(e) => {
-                      const dateValue = e.target.value ? new Date(e.target.value) : undefined;
+                      const dateValue = e.target.value ? new Date(e.target.value) : null;
                       setValue("endDate", dateValue);
                     }}
                     value={endDate ? endDate.toISOString().split('T')[0] : ''}

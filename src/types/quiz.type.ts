@@ -8,12 +8,16 @@ export type Quiz = {
 };
 
 export type Question = {
-    question: string;
+    questionText: string;
+    questionType: string
     options: Option[];
-    answer: string | null;
+    correctOption: string | null;
+    score: null;
     explanation?: string | null;
-    topic?: string | null;
-    difficulty?: "easy" | "medium" | "hard" | null;
+    correctAnswerTexts: null;
+    correctAnswerRegex: null;
+    caseSensitive: boolean;
+    trimWhitespace: boolean;
 };
 export type Option = {
     optionLabel: string;
@@ -21,14 +25,23 @@ export type Option = {
 };
 export type QuizzFormData = {
     title: string;
-    grade: string;
-    subject: string;
     startDate: string;
     endDate: string;
+    classId?: number;
+    createdBy?: number;
+    timeLimit: string;
+    description: string;
+    fileName?: string;
+    questions: Question[];
+};
+export type QuizzFormDatas = {
+    title: string;
+    startDate: string;
+    endDate: string;
+    classId?: number;
     timeLimit: string;
     description: string;
     questions: Question[];
-
 };
 export interface QuizCard {
     id: number;
@@ -62,7 +75,7 @@ export interface BackendQuizResponse {
     quizTitle: string;
     questions: Array<{
         questionText: string;
-        options: string[];
+        options: Option[];
         correctIndex: number;
         explanation?: string;
         topic?: string;

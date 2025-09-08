@@ -30,21 +30,23 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Users, Plus, Copy, Eye, Settings, BookOpen, Edit, Trash2 } from "lucide-react";
+import { Users, Plus, Copy, Eye, Settings, Trash2, Edit3 } from "lucide-react";
 import Link from "next/link";
 import {
   getTeacherClasses,
   createClass,
   getAllSubjects,
-  createSubject,
-  updateSubject,
-  deleteSubject,
+  deleteClass,
+  updateClass,
 } from "@/services/classService";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import DropdownNotificationBell from "@/components/classDetails/DropdownNotificationBell";
+import SubjectManager from "@/components/classes/SubjectManager";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 
+// Schema validate form lớp học
 const classSchema = yup.object().shape({
   className: yup.string().required("Tên lớp không được để trống"),
   schoolYear: yup
@@ -55,12 +57,10 @@ const classSchema = yup.object().shape({
   semester: yup.string().required("Vui lòng chọn học kỳ"),
   description: yup.string(),
   subjectId: yup.number().required("Vui lòng chọn môn học"),
-  joinMode: yup.string().oneOf(["AUTO", "APPROVAL"]).required("Vui lòng chọn chế độ tham gia lớp"),
-});
-
-const subjectSchema = yup.object().shape({
-  subjectName: yup.string().required("Tên môn học không được để trống"),
-  description: yup.string().required("Mô tả không được để trống"),
+  joinMode: yup
+    .string()
+    .oneOf(["AUTO", "APPROVAL"])
+    .required("Vui lòng chọn chế độ tham gia lớp"),
 });
 
 export default function TeacherClassesPage() {
@@ -70,17 +70,12 @@ export default function TeacherClassesPage() {
   const [pageNumber, setPageNumber] = useState(0);
   const [pageSize] = useState(6);
   const [totalPages, setTotalPages] = useState(0);
-  const [isSubjectDialogOpen, setIsSubjectDialogOpen] = useState(false);
-  const [editingSubject, setEditingSubject] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingClass, setEditingClass] = useState<any>(null);
 
-  // Form cho tạo lớp học
+  // Form cho tạo/sửa lớp học
   const classForm = useForm({
     resolver: yupResolver(classSchema),
-  });
-
-  // Form cho tạo/sửa môn học
-  const subjectForm = useForm({
-    resolver: yupResolver(subjectSchema),
   });
 
   useEffect(() => {
@@ -90,8 +85,6 @@ export default function TeacherClassesPage() {
       setUser(parsedUser);
 
       loadClasses(parsedUser.userId, pageNumber);
-
-      // Load danh sách môn học
       loadSubjects();
     }
   }, []);
@@ -114,72 +107,93 @@ export default function TeacherClassesPage() {
       .catch((err) => console.error("Lỗi khi lấy môn học:", err));
   };
 
-  const onCreateClass = async (data: any) => {
+  // Hàm mở form tạo mới
+  const openCreateModal = () => {
+    setEditingClass(null);
+    classForm.reset();
+    setIsModalOpen(true);
+  };
+
+  // Hàm mở form chỉnh sửa
+  const openEditModal = async (classItem: any) => {
+    setEditingClass(classItem);
+    
+    // Đảm bảo subjects đã load xong
+    if (subjects.length === 0) {
+      await loadSubjects();
+    }
+    
+    // Delay một chút để đảm bảo state đã update
+    setTimeout(() => {
+      // Điền dữ liệu vào form
+      classForm.reset({
+        className: classItem.className,
+        schoolYear: classItem.schoolYear,
+        semester: classItem.semester,
+        description: classItem.description || "",
+        subjectId: classItem.subject?.id,
+        joinMode: classItem.joinMode,
+      });
+      
+      setIsModalOpen(true);
+    }, 100);
+  };
+
+  // Hàm đóng modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingClass(null);
+    classForm.reset();
+  };
+
+  const onSubmitClass = async (data: any) => {
     try {
-      const payload = {
-        ...data,
-        teacherId: user.userId,
-      };
-      await createClass(payload);
-      loadClasses(user.userId, pageNumber);
+      if (editingClass) {
+        // Cập nhật lớp học
+        const payload = {
+          ...data,
+          id: editingClass.id,
+          teacherId: user.userId,
+        };
+
+        await updateClass(editingClass.id, payload);
+        alert("Cập nhật lớp học thành công!");
+      } else {
+        // Tạo lớp học mới
+        const payload = {
+          ...data,
+          teacherId: user.userId,
+        };
+
+        await createClass(payload);
+        alert("Tạo lớp học thành công!");
+      }
+
+      // load lại danh sách lớp
+      await loadClasses(user.userId, pageNumber);
+
+      // reset form và đóng modal
       classForm.reset();
+      setIsModalOpen(false);
+      setEditingClass(null);
+
     } catch (err) {
-      console.error("Lỗi tạo lớp học:", err);
+      console.error(editingClass ? "Lỗi cập nhật lớp học:" : "Lỗi tạo lớp học:", err);
+      alert(editingClass ? "Cập nhật lớp học thất bại!" : "Tạo lớp học thất bại!");
     }
   };
 
-const onCreateSubject = async (data: any) => {
-  try {
-    const payload = {
-      ...data,
-      createdById: user.userId,
-    };
-
-    if (editingSubject) {
-      // API call để cập nhật môn học
-      await updateSubject(editingSubject.id, payload);
-      console.log("Cập nhật môn học thành công:", payload);
-    } else {
-      // API call để tạo môn học mới
-      await createSubject(payload);
-      console.log("Tạo môn học mới thành công:", payload);
+  const handleDeleteClass = async (id: number) => {
+    if (confirm("Bạn có chắc chắn muốn xóa lớp này?")) {
+      try {
+        await deleteClass(id);
+        await loadClasses(user.userId, pageNumber);
+        alert("Xóa lớp thành công!");
+      } catch (err) {
+        console.error("Lỗi xóa lớp:", err);
+        alert("Xóa lớp thất bại!");
+      }
     }
-
-    await loadSubjects(); // load lại danh sách môn học
-    subjectForm.reset();
-    setEditingSubject(null);
-    setIsSubjectDialogOpen(false);
-  } catch (err) {
-    console.error("Lỗi tạo/cập nhật môn học:", err);
-  }
-};
-
-  const handleEditSubject = (subject: any) => {
-    setEditingSubject(subject);
-    subjectForm.setValue("subjectName", subject.subjectName);
-    subjectForm.setValue("description", subject.description);
-    setIsSubjectDialogOpen(true);
-  };
-
-  
-const handleDeleteSubject = async (subjectId: number) => {
-  if (confirm("Bạn có chắc chắn muốn xóa môn học này?")) {
-    try {
-      // API call để xóa môn học
-      await deleteSubject(subjectId);
-      console.log("Xóa môn học thành công, ID:", subjectId);
-
-      await loadSubjects(); // load lại danh sách sau khi xóa
-    } catch (err) {
-      console.error("Lỗi xóa môn học:", err);
-    }
-  }
-};
-
-  const handleCloseSubjectDialog = () => {
-    setIsSubjectDialogOpen(false);
-    setEditingSubject(null);
-    subjectForm.reset();
   };
 
   const copyClassCode = (code: string) => {
@@ -212,7 +226,7 @@ const handleDeleteSubject = async (subjectId: number) => {
       <Navigation />
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="space-y-6">
-          {/* Header + nút tạo lớp, tạo môn học và chuông thông báo */}
+          {/* Header + nút tạo lớp, quản lý môn học, thông báo */}
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-green-700">
@@ -225,222 +239,182 @@ const handleDeleteSubject = async (subjectId: number) => {
             <div className="flex items-center gap-4">
               <DropdownNotificationBell teacherId={user.userId} />
               <TeacherNotificationBell teacherId={user.userId} />
-              
-              {/* Dialog tạo/quản lý môn học */}
-              <Dialog open={isSubjectDialogOpen} onOpenChange={setIsSubjectDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="border-green-700 text-green-700 hover:bg-green-50">
-                    <BookOpen className="h-4 w-4 mr-2" />
-                    Quản lý môn học
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-                  <DialogHeader className="flex-shrink-0">
-                    <DialogTitle className="text-green-700">
-                      {editingSubject ? "Sửa môn học" : "Tạo môn học mới"}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {editingSubject ? "Cập nhật thông tin môn học" : "Nhập thông tin để tạo môn học mới"}
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <div className="flex-1 overflow-y-auto">
-                    {/* Form tạo/sửa môn học */}
-                    <form onSubmit={subjectForm.handleSubmit(onCreateSubject)} className="space-y-4 mb-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="subjectName">Tên môn học</Label>
-                        <Input id="subjectName" {...subjectForm.register("subjectName")} />
-                        {subjectForm.formState.errors.subjectName && (
-                          <p className="text-red-500 text-sm">
-                            {subjectForm.formState.errors.subjectName.message}
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="subjectDescription">Mô tả</Label>
-                        <Textarea id="subjectDescription" {...subjectForm.register("description")} rows={3} />
-                        {subjectForm.formState.errors.description && (
-                          <p className="text-red-500 text-sm">
-                            {subjectForm.formState.errors.description.message}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          type="submit"
-                          className="bg-green-700 hover:bg-green-800"
-                        >
-                          {editingSubject ? "Cập nhật" : "Tạo môn học"}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleCloseSubjectDialog}
-                        >
-                          Hủy
-                        </Button>
-                      </div>
-                    </form>
 
-                    {/* Danh sách môn học */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-green-700 mb-4">Danh sách môn học</h3>
-                      <div className="space-y-2">
-                        {uniqueSubjects.length > 0 ? (
-                          uniqueSubjects.map((subject) => (
-                            <Card key={subject.id} className="p-3">
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-medium text-green-700 truncate">{subject.subjectName}</h4>
-                                  <p className="text-sm text-gray-600 line-clamp-2">{subject.description}</p>
-                                </div>
-                                <div className="flex gap-1 ml-4 flex-shrink-0">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleEditSubject(subject)}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
-                                    onClick={() => handleDeleteSubject(subject.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </Card>
-                          ))
-                        ) : (
-                          <p className="text-gray-500 text-center py-4">Chưa có môn học nào</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              {/* Component quản lý môn học */}
+              <SubjectManager
+                userId={user.userId}
+                subjects={uniqueSubjects}
+                reloadSubjects={async () => loadSubjects()}
+              />
 
-              {/* Dialog tạo lớp học */}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="bg-green-700 hover:bg-green-800">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Tạo lớp mới
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col">
-                  <DialogHeader>
-                    <DialogTitle className="text-green-700">
-                      Tạo lớp học mới
-                    </DialogTitle>
-                    <DialogDescription>
-                      Nhập thông tin để tạo lớp học mới
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={classForm.handleSubmit(onCreateClass)} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="className">Tên lớp</Label>
-                      <Input id="className" {...classForm.register("className")} />
-                      {classForm.formState.errors.className && (
-                        <p className="text-red-500 text-sm">
-                          {classForm.formState.errors.className.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="schoolYear">Niên khóa</Label>
-                      <Input
-                        id="schoolYear"
-                        type="number"
-                        {...classForm.register("schoolYear")}
-                      />
-                      {classForm.formState.errors.schoolYear && (
-                        <p className="text-red-500 text-sm">
-                          {classForm.formState.errors.schoolYear.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Học kỳ</Label>
-                      <Select
-                        onValueChange={(val) => classForm.setValue("semester", val)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Chọn học kỳ" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Học kỳ 1">Học kỳ 1</SelectItem>
-                          <SelectItem value="Học kỳ 2">Học kỳ 2</SelectItem>
-                          <SelectItem value="Học kỳ hè">Học kỳ hè</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {classForm.formState.errors.semester && (
-                        <p className="text-red-500 text-sm">
-                          {classForm.formState.errors.semester.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Mô tả</Label>
-                      <Textarea id="description" {...classForm.register("description")} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Môn học</Label>
-                      <Select
-                        onValueChange={(val) =>
-                          classForm.setValue("subjectId", Number(val))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Chọn môn học" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {uniqueSubjects.map((subject, index) => (
-                            <SelectItem
-                              key={`subject-${subject.id}-${index}`}
-                              value={subject.id.toString()}
-                            >
-                              {subject.subjectName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {classForm.formState.errors.subjectId && (
-                        <p className="text-red-500 text-sm">
-                          {classForm.formState.errors.subjectId.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Chế độ tham gia lớp</Label>
-                      <Select onValueChange={(val) => classForm.setValue("joinMode", val as "AUTO" | "APPROVAL")}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Chọn chế độ" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AUTO">Tự động vào (không cần duyệt)</SelectItem>
-                          <SelectItem value="APPROVAL">Cần giáo viên duyệt</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {classForm.formState.errors.joinMode && (
-                        <p className="text-red-500 text-sm">{classForm.formState.errors.joinMode.message}</p>
-                      )}
-                    </div>
-                    <Button
-                      type="submit"
-                      className="w-full bg-green-700 hover:bg-green-800"
-                    >
-                      Tạo lớp
-                    </Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
+              {/* Button tạo lớp học */}
+              <Button 
+                className="bg-green-700 hover:bg-green-800"
+                onClick={openCreateModal}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Tạo lớp mới
+              </Button>
             </div>
           </div>
+
+          {/* Dialog tạo/sửa lớp học */}
+          <Dialog 
+            open={isModalOpen} 
+            onOpenChange={(open) => {
+              if (!open) {
+                closeModal();
+              }
+            }}
+          >
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col">
+              <DialogHeader>
+                <DialogTitle className="text-green-700">
+                  {editingClass ? "Chỉnh sửa lớp học" : "Tạo lớp học mới"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingClass 
+                    ? "Cập nhật thông tin lớp học" 
+                    : "Nhập thông tin để tạo lớp học mới"
+                  }
+                </DialogDescription>
+              </DialogHeader>
+              <form
+                onSubmit={classForm.handleSubmit(onSubmitClass)}
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="className">Tên lớp</Label>
+                  <Input id="className" {...classForm.register("className")} />
+                  {classForm.formState.errors.className && (
+                    <p className="text-red-500 text-sm">
+                      {classForm.formState.errors.className.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="schoolYear">Niên khóa</Label>
+                  <Input
+                    id="schoolYear"
+                    type="number"
+                    {...classForm.register("schoolYear")}
+                  />
+                  {classForm.formState.errors.schoolYear && (
+                    <p className="text-red-500 text-sm">
+                      {classForm.formState.errors.schoolYear.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>Học kỳ</Label>
+                  <Select
+                    key={`semester-select-${editingClass?.id || 'new'}`}
+                    value={classForm.watch("semester") || ""}
+                    onValueChange={(val) =>
+                      classForm.setValue("semester", val)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn học kỳ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Học kỳ 1">Học kỳ 1</SelectItem>
+                      <SelectItem value="Học kỳ 2">Học kỳ 2</SelectItem>
+                      <SelectItem value="Học kỳ hè">Học kỳ hè</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {classForm.formState.errors.semester && (
+                    <p className="text-red-500 text-sm">
+                      {classForm.formState.errors.semester.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Mô tả</Label>
+                  <Textarea
+                    id="description"
+                    {...classForm.register("description")}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Môn học</Label>
+                  <Select
+                    key={`subject-select-${editingClass?.id || 'new'}`}
+                    value={classForm.watch("subjectId")?.toString() || ""}
+                    onValueChange={(val) =>
+                      classForm.setValue("subjectId", Number(val))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn môn học" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniqueSubjects.map((subject, index) => (
+                        <SelectItem
+                          key={`subject-${subject.id}-${index}`}
+                          value={subject.id.toString()}
+                        >
+                          {subject.subjectName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {classForm.formState.errors.subjectId && (
+                    <p className="text-red-500 text-sm">
+                      {classForm.formState.errors.subjectId.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>Chế độ tham gia lớp</Label>
+                  <Select
+                    key={`joinmode-select-${editingClass?.id || 'new'}`}
+                    value={classForm.watch("joinMode") || ""}
+                    onValueChange={(val) =>
+                      classForm.setValue("joinMode", val as "AUTO" | "APPROVAL")
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn chế độ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AUTO">
+                        Tự động vào (không cần duyệt)
+                      </SelectItem>
+                      <SelectItem value="APPROVAL">
+                        Cần giáo viên duyệt
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {classForm.formState.errors.joinMode && (
+                    <p className="text-red-500 text-sm">
+                      {classForm.formState.errors.joinMode.message}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-green-700 hover:bg-green-800"
+                  disabled={classForm.formState.isSubmitting}
+                >
+                  {classForm.formState.isSubmitting 
+                    ? "Đang xử lý..." 
+                    : editingClass ? "Cập nhật lớp" : "Tạo lớp"
+                  }
+                </Button>
+                
+                {/* Thêm button hủy */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={closeModal}
+                >
+                  Hủy
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
 
           {/* Danh sách lớp */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -449,48 +423,58 @@ const handleDeleteSubject = async (subjectId: number) => {
                 key={`class-${classItem.id}-${index}`}
                 className="hover:shadow-lg transition-shadow"
               >
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg text-green-700">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg text-green-700 mb-2">
                         {classItem.className}
                       </CardTitle>
-                      <CardDescription className="mt-1">
+                      <CardDescription className="text-sm text-gray-600 line-clamp-2">
                         {classItem.description}
                       </CardDescription>
                     </div>
-                    <Badge variant="secondary">
-                      <Users className="h-3 w-3 mr-1" />
-                      {classItem.studentCount ?? 0}
+                    <Badge 
+                      variant="outline"
+                      className={`text-xs font-medium shrink-0 ml-3 ${
+                        classItem.joinMode === "AUTO" 
+                          ? "border-green-200 bg-green-50 text-green-700" 
+                          : "border-amber-200 bg-amber-50 text-amber-700"
+                      }`}
+                    >
+                      {classItem.joinMode === "AUTO" ? "Tự động" : "Phê duyệt"}
                     </Badge>
                   </div>
+                  
+                  {/* Thông tin niên khóa */}
+                  <div className="text-sm text-gray-500 border-t pt-3">
+                    Niên khóa: {classItem.schoolYear} - {classItem.semester}
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-4">
-                      <label htmlFor="">Mã lớp: </label>
-                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                        <span className="text-sm font-mono">{classItem.id}</span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => copyClassCode(classItem.id.toString())}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
+                
+                <CardContent className="pt-0">
+                  <div className="space-y-4">
+                    
+                    {/* Mã lớp */}
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-gray-500">MÃ LỚP:</span>
+                        <span className="text-sm font-bold text-gray-800 font-mono">
+                          #{classItem.id}
+                        </span>
                       </div>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Tạo ngày:{" "}
-                      {new Date(classItem.createdAt).toLocaleDateString(
-                        "vi-VN"
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Link
-                        href={`/classes/${classItem.id}`}
-                        className="flex-1"
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-3 hover:bg-white/80 hover:shadow-sm transition-all"
+                        onClick={() => copyClassCode(classItem.id.toString())}
                       >
+                        <Copy className="h-3 w-3 mr-1" />
+                        <span className="text-xs">Sao chép</span>
+                      </Button>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Link href={`/classes/${classItem.id}`} className="flex-1">
                         <Button
                           size="sm"
                           className="w-full bg-green-700 hover:bg-green-800 text-white"
@@ -499,13 +483,40 @@ const handleDeleteSubject = async (subjectId: number) => {
                           Xem lớp
                         </Button>
                       </Link>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-green-700 text-green-700 hover:bg-green-50"
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="w-9 h-9 p-0 rounded-lg bg-white hover:bg-green-50 border border-gray-200 hover:border-green-300 text-gray-600 hover:text-green-700 shadow-sm hover:shadow-md transition-all duration-200"
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-44 rounded-xl shadow-lg border border-gray-200 bg-white overflow-hidden"
+                        >
+                          <DropdownMenuItem
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors duration-200 cursor-pointer"
+                            onClick={() => openEditModal(classItem)}
+                          >
+                            <Edit3 className="h-4 w-4 mr-3 text-green-600" />
+                            Chỉnh sửa lớp
+                          </DropdownMenuItem>
+                          
+                          <div className="my-1 border-t border-gray-200"></div>
+                          
+                          <DropdownMenuItem
+                            className="flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200 cursor-pointer"
+                            onClick={() => handleDeleteClass(classItem.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-3" />
+                            Xóa lớp học
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </CardContent>
@@ -513,14 +524,14 @@ const handleDeleteSubject = async (subjectId: number) => {
             ))}
           </div>
 
-          {/* Nút phân trang dạng số */}
+          {/* Phân trang */}
           {totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-6">
               {Array.from({ length: totalPages }, (_, i) => i).map((num) => (
                 <Button
                   key={num}
                   variant={num === pageNumber ? "default" : "outline"}
-                  onClick={() => loadClasses(user.userId,num)}
+                  onClick={() => loadClasses(user.userId, num)}
                   className={
                     num === pageNumber
                       ? "bg-green-700 hover:bg-green-800 text-white"

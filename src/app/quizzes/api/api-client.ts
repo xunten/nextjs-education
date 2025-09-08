@@ -1,23 +1,31 @@
-export async function apiClient<T>(
-    path: string,
-    options: RequestInit = {}
-): Promise<T> {
+// src/api/api-client.ts
+import axios, { AxiosRequestConfig } from "axios";
+
+
+export const apiClient = axios.create({
+    baseURL: "http://localhost:8080/api",
+    withCredentials: true,
+    timeout: 15000,
+});
+
+// Gắn token tự động
+apiClient.interceptors.request.use((config) => {
     const token = localStorage.getItem("accessToken");
-    const headers = {
-        "Content-Type": "application/json",
-        ...(options.headers || {}),
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
-
-    const res = await fetch(`http://localhost:8080${path}`, {
-        ...options,
-        headers,
-        credentials: "include",
-    });
-
-    if (!res.ok) {
-        throw new Error(await res.text());
+    if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+});
 
-    return res.json();
+apiClient.interceptors.response.use(
+    (res) => res.data,
+    (err) => Promise.reject(err)
+);
+
+export async function apiCall<T>(
+    path: string,
+    config: AxiosRequestConfig = {}
+): Promise<T> {
+    return apiClient.request<T>({ url: path, ...config });
 }

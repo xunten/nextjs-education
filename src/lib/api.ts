@@ -72,7 +72,6 @@ export async function callGenerateAPI(params: {
             throw new Error(errorMessage);
         }
 
-        // Parse successful response
         const contentType = res.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const textResponse = await res.text();
@@ -81,8 +80,11 @@ export async function callGenerateAPI(params: {
         }
 
         const backendResponse: BackendQuizResponse = await res.json();
+        console.log('backendResponse :', backendResponse);
 
         const { questions, ...rest } = mapBackendToFormData(backendResponse);
+        console.log('questions :', questions);
+
         useQuizzStorage.getState().setData({
             ...useQuizzStorage.getState().data,
             questions
