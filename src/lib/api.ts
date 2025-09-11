@@ -1,175 +1,119 @@
-// lib/api/quiz-api.ts - Updated with better error handling and debugging
-
+// lib/api/quiz-api.ts
+import axios, { AxiosRequestConfig, AxiosError } from "axios";
 import { AiQuizSettings, BackendQuizResponse, QuizzFormData } from "@/types/quiz.type";
 import { useQuizzStorage } from "./store/useQuizzStorage";
 import { mapBackendToFormData } from "@/untils/utils";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
+// Create Axios instance
+export const apiClient = axios.create({
+    baseURL: API_BASE,
+    withCredentials: true,
+    timeout: 30000, // Tăng timeout lên 30s
+    headers: {
+        'Content-Type': 'application/json',
+    }
+});
 
+apiClient.interceptors.request.use((config) => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
 
+apiClient.interceptors.response.use(
+    (res) => res.data,
+    async (err: AxiosError) => {
+        const errorMessage = extractAxiosError(err);
+        console.error("API Error:", errorMessage);
+        return Promise.reject(new Error(errorMessage));
+    }
+);
+
+export async function apiCall<T>(path: string, config: AxiosRequestConfig = {}): Promise<T> {
+    return apiClient.request<T>({ url: path, ...config });
+}
+
+function extractAxiosError(err: AxiosError): string {
+    console.error("Full error object:", err);
+
+    // CORS error
+    if (err.code === "ERR_NETWORK" && !err.response) {
+        return `CORS Error: Không thể kết nối tới server tại ${API_BASE}. Kiểm tra CORS configuration.`;
+    }
+
+    if (err.response) {
+        const { data, status, statusText } = err.response;
+        console.error("Response error:", { data, status, statusText });
+
+        if (typeof data === "string") return `HTTP ${status}: ${data}`;
+        if (typeof data === "object" && (data as any).message) return (data as any).message;
+        if (typeof data === "object" && (data as any).error) return (data as any).error;
+        return `HTTP ${status}: ${statusText}`;
+    }
+
+    if (err.request) {
+        console.error("Request error:", err.request);
+        return `No response from server. Check if backend is running at ${API_BASE}`;
+    }
+
+    return err.message || "Unknown Axios error";
+}
 
 export async function callGenerateAPI(params: {
     file: File;
     settings: AiQuizSettings;
-    token?: string;
 }): Promise<void> {
-    const { file, settings, token } = params;
-
-    // Debug logs
-    // console.log('Calling API with:', {
-    //     fileName: file.name,
-    //     fileSize: file.size,
-    //     fileType: file.type,
-    //     settings,
-    //     apiUrl: `${API_BASE}/api/ai/quiz/generate-from-file`
-    // });
-
-    // Tạo FormData
     const form = new FormData();
-    form.append("file", file);
-    form.append("settings", new Blob([JSON.stringify(settings)], {
-        type: "application/json"
+    form.append("file", params.file);
+    form.append("settings", new Blob([JSON.stringify(params.settings)], {
+        type: "application/json",
     }));
 
-    try {
-        const fullUrl = `${API_BASE}/api/ai/quiz/generate-from-file`;
-        const res = await fetch(fullUrl, {
-            method: "POST",
-            body: form,
-            headers: token ? {
-                'Authorization': `Bearer ${token}`
-            } : {},
-        });
-
-        console.log('Response status:', res.status);
-        console.log('Response headers:', Object.fromEntries(res.headers.entries()));
-
-        if (!res.ok) {
-            const contentType = res.headers.get('content-type');
-
-            let errorMessage = `HTTP ${res.status}: ${res.statusText}`;
-
-            try {
-                if (contentType && contentType.includes('application/json')) {
-                    const errorData = await res.json();
-                    errorMessage = errorData.error || errorData.message || errorMessage;
-                } else {
-                    const textResponse = await res.text();
-                    console.log('Error response body:', textResponse.substring(0, 500));
-
-                    if (textResponse.includes('<!DOCTYPE')) {
-                        const titleMatch = textResponse.match(/<title>(.*?)<\/title>/i);
-                        errorMessage = titleMatch ? titleMatch[1] : 'Server returned HTML error page';
-                    } else {
-                        errorMessage = textResponse || errorMessage;
-                    }
-                }
-            } catch (parseError) {
-                console.error('Error parsing error response:', parseError);
-            }
-
-            throw new Error(errorMessage);
-        }
-
-        const contentType = res.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            const textResponse = await res.text();
-            console.error('Expected JSON but got:', contentType, textResponse.substring(0, 200));
-            throw new Error('Server did not return JSON response');
-        }
-
-        const backendResponse: BackendQuizResponse = await res.json();
-        console.log('backendResponse :', backendResponse);
-
-        const { questions, ...rest } = mapBackendToFormData(backendResponse);
-        console.log('questions :', questions);
-
-        useQuizzStorage.getState().setData({
-            ...useQuizzStorage.getState().data,
-            questions
-        });
-
-
-
-    } catch (error) {
-        console.error('API call failed:', error);
-
-        // Enhance error message for common issues
-        if (error instanceof TypeError && error.message.includes('fetch')) {
-            throw new Error(`Cannot connect to server at ${API_BASE}. Please check if the backend is running.`);
-        }
-
-        throw error;
-    }
-}
-
-
-export async function testAPIConnection(): Promise<boolean> {
-    try {
-        const response = await fetch(`${API_BASE}/actuator/health`, {
-            method: 'GET',
-        });
-        return response.ok;
-    } catch {
-        return false;
-    }
-}
-
-type ApiOptions = RequestInit & { asText?: boolean };
-
-export async function api<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
-    const headers: Record<string, string> = {
-        ...(options.headers as Record<string, string> || {}),
-    };
-
-    if (!(options.body instanceof FormData)) {
-        headers["Content-Type"] = "application/json";
-    }
-
-    // ⬇️ Tự động thêm token nếu chưa có Authorization
-    if (!headers["Authorization"] && typeof window !== "undefined") {
-        const token = localStorage.getItem("accessToken");
-        if (token) headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const res = await fetch(`${API_BASE}${path}`, {
-        credentials: "include", // hoặc "same-origin" nếu không dùng cookie
-        ...options,
-        headers,
+    console.log("Sending request to:", `${API_BASE}/api/ai/quiz/generate-from-file`);
+    console.log("Form data:", {
+        file: params.file.name,
+        settings: JSON.stringify(params.settings, null, 2)
     });
 
-    if (!res.ok) {
-        const contentType = res.headers.get('content-type');
-        let errorMessage = `HTTP ${res.status}: ${res.statusText}`;
-
-        try {
-            if (contentType?.includes('application/json')) {
-                const errorData = await res.json();
-                errorMessage = errorData.error || errorData.message || errorMessage;
-            } else {
-                const textResponse = await res.text();
-                errorMessage = textResponse || errorMessage;
+    try {
+        const res = await apiClient.post<BackendQuizResponse>(
+            "/api/ai/quiz/generate-from-file", // Đảm bảo path đúng
+            form,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+                timeout: 60000, // 60s timeout cho AI processing
             }
-        } catch { }
+        );
 
-        throw new Error(errorMessage);
+        console.log("API Response:", res);
+
+        const { questions, ...rest } = mapBackendToFormData(res);
+        useQuizzStorage.getState().setData({
+            ...useQuizzStorage.getState().data,
+            questions,
+        });
+
+    } catch (error) {
+        console.error("callGenerateAPI failed:", error);
+        throw error;
     }
-
-    if (options.asText) return (await res.text()) as T;
-    if (res.status === 204) return null as T;
-
-    return (await res.json()) as T;
 }
 
 export function validateFile(file: File): { valid: boolean; error?: string } {
     const maxSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = [
-        'application/pdf',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/msword',
-        'text/plain',
-        'text/markdown'
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/msword",
+        "text/plain",
+        "text/markdown",
     ];
 
     if (file.size > maxSize) {

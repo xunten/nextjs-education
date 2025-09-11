@@ -18,7 +18,7 @@ export interface SessionCreateDTO {
   startPeriod: number;
   endPeriod: number;
   location: string;      // nếu backend dùng entity Location thì đổi thành locationId
-  status: "SCHEDULED" | "PENDING" | "CANCELLED" | "HOLIDAY" | "COMPLETED";
+  status: "SCHEDULED" | "PENDING" | "CANCELLED" | "HOLIDAY" | "COMPLETED" | "MAKEUP";
   note?: string;
 }
 

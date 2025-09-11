@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { fetchTeacherDashboard } from "@/services/dashboardService";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 export default function TeacherDashboard() {
   const router = useRouter();
@@ -88,7 +89,18 @@ export default function TeacherDashboard() {
   }, [router]);
 
   if (loading) {
-    return <div className="p-10 text-center">Đang tải dữ liệu...</div>;
+    return (
+      <div>
+        <Navigation />
+        <div className="container mx-auto p-6 h-96 flex justify-center items-center">
+          <DotLottieReact
+            src="/animations/loading.lottie"
+            loop
+            autoplay
+          />
+        </div>
+      </div>
+    )
   }
 
   if (!user || !dashboardData) {
@@ -312,7 +324,7 @@ export default function TeacherDashboard() {
                           {" "}
                           {Math.round(
                             (deadline.submittedCount / deadline.totalStudents) *
-                              100
+                            100
                           )}{" "}
                           %{" "}
                         </span>{" "}

@@ -27,12 +27,15 @@ export const getClasses = async (): Promise<ClassItem[]> => {
   return response.data;
 };
 
-
+export const getLatestClasses = async () => {
+  const response = await apiClient.get<ClassItem[]>('/auth/classes/latest');
+  console.log("Dữ liệu 10 lớp học trả về từ API:", response.data);
+  return response.data;
+};
 
 export const searchClasses = async (query: string) => {
-  const res = await apiClient.get(`/auth/classes/search`, {
-    params: { q: query }
-  });
+  const res = await apiClient.get(`/auth/classes/search?keyword=${query}`);
+  console.log("Dữ liệu tìm lớp học trả về từ API:", res.data);
   return res.data;
 };
 
@@ -99,7 +102,7 @@ export const createClass = (payload: {
   description: string;
   teacherId: number;
   subjectId: number;
-  join_mode: 'AUTO' | 'APPROVAL' ;
+  join_mode: 'AUTO' | 'APPROVAL';
 }) => {
   console.log("Payload tạo lớp:", payload);
   return apiClient.post(`/auth/classes`, payload);
@@ -232,7 +235,6 @@ export const approveJoinRequest = async (requestId: number): Promise<JoinRequest
   return response.data;
 };
 
-// Reject request
 export const rejectJoinRequest = async (
   requestId: number,
   reason?: string
@@ -241,5 +243,12 @@ export const rejectJoinRequest = async (
     `/classes/join-requests/${requestId}/reject`,
     reason || null
   );
+  return response.data;
+};
+
+
+export const finalizeAttendanceScoreForClass = async (classId: number): Promise<string> => {
+  const response = await apiClient.post<string>(`/auth/classes/finalize/${classId}`);
+  console.log(`Finalize attendance score for class ${classId}:`, response.data);
   return response.data;
 };

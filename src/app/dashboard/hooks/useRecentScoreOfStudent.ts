@@ -1,8 +1,7 @@
-import { apiClient } from "@/app/quizzes/api/api-client";
+import { apiClient } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 
 export interface RecentScore {
-
     className: string,
     subjectName: string,
     score: number,

@@ -148,7 +148,7 @@ export default function CreateQuizzPage() {
       toast.success(
         `Đã trích xuất thành công ${extractedQuestions.length} câu hỏi!`
       );
-      router.push("/quizzes/teacher/preview");
+      router.push("/quizzes/teacher/preview?mode=create");
     } catch (error) {
       console.error("Error processing files:", error);
       toast.error("Đã xảy ra lỗi khi xử lý file. Vui lòng thử lại.");

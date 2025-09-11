@@ -24,6 +24,8 @@ import Link from "next/link";
 import { formatDateShort, getDayOfWeek, dayOfWeekMapping } from "@/untils/datetime";
 import { sessionApi, SessionCreateDTO } from "@/services/sessionApi";
 import { getAllLocations } from "@/services/classScheduleService";
+import { finalizeAttendanceScoreForClass } from "@/services/classService";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 
 // Kiểu dữ liệu buổi học
 interface SessionData {
@@ -34,7 +36,7 @@ interface SessionData {
   startPeriod: number;
   endPeriod: number;
   location: string;
-  status: "SCHEDULED" | "COMPLETED" | "PENDING" | "CANCELLED" | "HOLIDAY";
+  status: "SCHEDULED" | "COMPLETED" | "MAKEUP" | "CANCELLED" | "HOLIDAY" | "PENDING";
   note?: string;
 }
 
@@ -61,7 +63,7 @@ export default function SessionListView({
     startPeriod: 1,
     endPeriod: 3,
     location: "",
-    status: "SCHEDULED",
+    status: "MAKEUP",
     note: "",
   });
 
@@ -83,6 +85,8 @@ export default function SessionListView({
         return <Badge className="bg-red-100 text-red-800">Đã hủy</Badge>;
       case "HOLIDAY":
         return <Badge className="bg-gray-200 text-gray-800">Nghỉ lễ</Badge>;
+      case "MAKEUP":
+        return <Badge className="bg-orange-200 text-orange-800">Buổi bù</Badge>;
       default:
         return <Badge variant="secondary">Không rõ</Badge>;
     }
@@ -138,6 +142,21 @@ export default function SessionListView({
     (a, b) => new Date(a.sessionDate).getTime() - new Date(b.sessionDate).getTime()
   );
 
+  const handleAttendanceScore = async () => {
+    const confirm = window.confirm("Bạn có chắc chắn muốn tổng hợp điểm chuyên cần cho lớp này?");
+    if (!confirm) return;
+    try {
+      const result = await finalizeAttendanceScoreForClass(parseInt(classId));
+      console.log("Kết quả tính điểm chuyên cần:", result);
+      alert("Tổng hợp điểm chuyên cần thành công!");
+    } catch (error) {
+      console.error("Lỗi khi tổng hợp điểm chuyên cần:", error);
+      alert("Có lỗi xảy ra khi tổng hợp điểm chuyên cần!");
+    }
+  }
+
+
+
   return (
     <Card>
       <CardHeader className="flex justify-between">
@@ -145,15 +164,15 @@ export default function SessionListView({
           <Calendar className="h-5 w-5" />
           Danh sách buổi học
         </CardTitle>
+
+        {localStorage.getItem("role") === "teacher" &&
         <Button
-          onClick={() => {
-            setForm({ ...form, patternId: 0, sessionDate: "", note: "", location: "" });
-            setShowDialog(true);
-          }}
+          onClick={() => handleAttendanceScore() }
           className="bg-blue-600 hover:bg-blue-700"
         >
-          <PlusCircle className="h-4 w-4 mr-1" /> Thêm buổi học
+          <PlusCircle className="h-4 w-4 mr-1" /> Tổng hợp điểm chuyên cần
         </Button>
+        }
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
@@ -195,59 +214,90 @@ export default function SessionListView({
                     <TableCell>{getStatusBadge(s.status)}</TableCell>
                     <TableCell>{s.note || "-"}</TableCell>
                     <TableCell className="text-right space-x-2">
-                      {isToday && s.status !== "CANCELLED" && s.status !== "HOLIDAY" && (
+                    {/* Nút điểm danh */}
+                    {isToday && s.status !== "CANCELLED" && s.status !== "HOLIDAY" && (
+                      localStorage.getItem("role") === "student" ? (
+                        <Link href={`/classes/${classId}/session/${s.id}/detail`}>
+                          <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                            <UserCheck className="h-4 w-4 mr-1" />
+                            Xem chi tiết
+                          </Button>
+                        </Link>
+                      ) : (
                         <Link href={`/classes/${classId}/session/${s.id}/attendance`}>
                           <Button size="sm" className="bg-green-700 hover:bg-green-800">
                             <UserCheck className="h-4 w-4 mr-1" />
                             Điểm danh
                           </Button>
                         </Link>
-                      )}
+                      )
+                    )}
 
-                      {s.status !== "CANCELLED" ? (
+                    {/* Menu ba gạch chứa các nút còn lại */}
+                    {localStorage.getItem("role") === "teacher" &&
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleCancel(s.id)}
-                          className="text-red-600 border-red-600 hover:bg-red-50"
+                          className="border-gray-400 text-gray-600 hover:bg-gray-100"
                         >
-                          <XCircle className="h-4 w-4 mr-1" />
-                          Hủy
+                          <span className="sr-only">Mở menu</span>
+                          {/* Icon 3 gạch ngang */}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                          </svg>
                         </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setForm({
-                              ...form,
-                              patternId: s.patternId,
-                              classId: s.classId,
-                              startPeriod: s.startPeriod,
-                              endPeriod: s.endPeriod,
-                              location: s.location,
-                              note: "Buổi bù",
-                            });
-                            setShowDialog(true);
-                          }}
-                          className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                        >
-                          <PlusCircle className="h-4 w-4 mr-1" />
-                          Tạo buổi bù
-                        </Button>
-                      )}
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent 
+                        align="end" 
+                        className="w-44 p-1 rounded-lg shadow-lg bg-white"
+                      >
+                        {s.status !== "CANCELLED" ? (
+                          <DropdownMenuItem
+                            className="flex items-center gap-2 px-3 py-2 text-red-600 rounded-md hover:bg-red-50 cursor-pointer"
+                            onClick={() => handleCancel(s.id)}
+                          >
+                            <XCircle className="h-4 w-4" /> Hủy buổi
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
+                            className="flex items-center gap-2 px-3 py-2 text-blue-600 rounded-md hover:bg-blue-50 cursor-pointer"
+                            onClick={() => {
+                              setForm({
+                                ...form,
+                                patternId: s.patternId,
+                                classId: s.classId,
+                                startPeriod: s.startPeriod,
+                                endPeriod: s.endPeriod,
+                                location: s.location,
+                                note: "Buổi bù",
+                              });
+                              setShowDialog(true);
+                            }}
+                          >
+                            <PlusCircle className="h-4 w-4" /> Tạo buổi bù
+                          </DropdownMenuItem>
+                        )}
 
-                      {s.status !== "HOLIDAY" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleHoliday(s.id)}
-                          className="text-gray-600 border-gray-400 hover:bg-gray-100"
-                        >
-                          Nghỉ lễ
-                        </Button>
-                      )}
-                    </TableCell>
+                        {s.status !== "HOLIDAY" && (
+                          <DropdownMenuItem
+                            className="flex items-center gap-2 px-3 py-2 text-gray-600 rounded-md hover:bg-gray-100 cursor-pointer"
+                            onClick={() => handleHoliday(s.id)}
+                          >
+                            <Calendar className="h-4 w-4" /> Nghỉ lễ
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    }
+                  </TableCell>
                   </TableRow>
                 );
               })}

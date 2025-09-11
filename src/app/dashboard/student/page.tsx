@@ -23,7 +23,10 @@ import { fetchStudentDashboard } from "@/services/dashboardService";
 import { useRecentScoreOfStudent } from "../hooks/useRecentScoreOfStudent";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+
 import { toast } from "react-toastify";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+
 
 export default function StudentDashboard() {
   const router = useRouter();
@@ -164,7 +167,20 @@ export default function StudentDashboard() {
     return <Badge variant="destructive">Yếu</Badge>;
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div>
+        <Navigation />
+        <div className="container mx-auto p-6 h-96 flex justify-center items-center">
+          <DotLottieReact
+            src="/animations/loading.lottie"
+            loop
+            autoplay
+          />
+        </div>
+      </div>
+    )
+  }
   if (!user) return null;
 
   const getTypeIcon = (type: string) => {
@@ -433,7 +449,7 @@ export default function StudentDashboard() {
                     {Math.round(
                       (dashboardData.completedAssignments /
                         dashboardData.totalAssignments) *
-                        100
+                      100
                     )}
                     %
                   </div>

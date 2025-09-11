@@ -122,6 +122,17 @@ export const getSubmissionsByClassId = async (classId: number): Promise<Submissi
   return response.data;
 };
 
+// Lấy submission của học sinh cho 1 lớp
+export const getSubmissionStudentByClass = async (
+  classId: number,
+  studentId: number
+): Promise<Submission[] | Submission> => {
+  const response = await apiClient.get<Submission[] | Submission>(
+    `/submissions/class/${classId}/student/${studentId}`
+  );
+  return response.data;
+};
+
 // Tải file submission
 export const downloadSubmissionFile = async (submissionId: number): Promise<Blob> => {
   const response = await apiClient.get(`/submissions/download/${submissionId}`, {

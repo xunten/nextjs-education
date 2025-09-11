@@ -1,5 +1,5 @@
 // hooks/useTeacherRanking.ts
-import { apiClient } from "@/app/quizzes/api/api-client";
+import { apiClient } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 
 export interface StudentRanking {
@@ -32,7 +32,7 @@ export function useTeacherRanking(teacherId: number) {
     return useQuery<StudentRanking[]>({
         queryKey: ["teacher-ranking", teacherId],
         queryFn: () =>
-            apiClient<StudentRanking[]>(`/stats/teacher/38/ranking`),
+            apiClient<StudentRanking[]>(`api/stats/teacher/38/ranking`),
         staleTime: 1000 * 60 * 2,
     });
 }

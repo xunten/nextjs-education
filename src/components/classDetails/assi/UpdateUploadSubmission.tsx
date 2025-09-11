@@ -109,14 +109,16 @@ export default function UpdateUploadSubmission({ submission, assignment, onSucce
         }
     }
 
+    const isOverdue = new Date(assignment.dueDate) < new Date();
+
     return (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
                 <Button size="sm" variant="outline"
-                    disabled={disabled}
-                    className={disabled ? "opacity-50 cursor-not-allowed" : ""}>
+                    disabled={disabled || isOverdue}
+                    className={(disabled || isOverdue) ? "opacity-50 cursor-not-allowed" : ""}>
                     <FileEdit className="h-4 w-4 mr-1" />
-                    Chỉnh sửa bài nộp
+                    {isOverdue ? "Hết hạn chỉnh sửa" : "Chỉnh sửa bài nộp"}
                 </Button>
             </DialogTrigger>
             <DialogContent>
@@ -147,7 +149,15 @@ export default function UpdateUploadSubmission({ submission, assignment, onSucce
                             >
                                 <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                                 <p className="text-sm text-gray-600">Kéo thả tệp hoặc click để chọn</p>
+                                {/* Nếu user chọn file mới */}
                                 {watchedFile && <p className="text-xs text-gray-500 mt-2">{watchedFile.name}</p>}
+
+                                {/* Nếu chưa chọn file mới thì hiển thị file cũ */}
+                                {!watchedFile && submission.filePath && (
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        File hiện tại: <span className="underline">{getFileName(submission.filePath ?? "")}</span>
+                                    </p>
+                                )}
                             </div>
                             <input
                                 id="update-file"

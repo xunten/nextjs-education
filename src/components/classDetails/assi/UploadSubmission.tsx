@@ -82,7 +82,6 @@ export default function UploadSubmission({ assignment, onSuccess }: AssignmentsT
                 if (parsedUser) {
                     setUser(parsedUser);
                 }
-                console.log("User data loaded:", parsedUser);
             } catch (e) {
                 console.error("Lỗi parse user:", e);
             }
@@ -90,16 +89,15 @@ export default function UploadSubmission({ assignment, onSuccess }: AssignmentsT
     }, []);
 
     const onSubmit = async (data: FieldValues) => {
-        const formData = data as SubmissionFormData;
+        const submissionData  = data as SubmissionFormData;
         try {
             const formData = new FormData()
             formData.append("assignmentId", assignment.id.toString())
             formData.append("studentId", user.userId.toString())
-            console.log("Submitting assignment data:", formData);
-            if (data.file) {
-                formData.append("file", data.file)
+            if (submissionData.file) {
+                formData.append("file", submissionData.file)
             }
-            formData.append("description", data.description || "")
+            formData.append("description", submissionData.description || "")
 
             const newSubmission = await submitAssignment(formData)
             // Gọi callback cho cha biết
@@ -122,15 +120,18 @@ export default function UploadSubmission({ assignment, onSuccess }: AssignmentsT
         }
     }
 
+    // 🔹 Kiểm tra quá hạn nộp bài
+    const isOverdue = new Date(assignment.dueDate) < new Date();
 
     return (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-                <Button size="sm">
+                <Button size="sm" disabled={isOverdue}>
                     <Upload className="h-4 w-4 mr-1" />
-                    Nộp bài
+                    {isOverdue ? "Hết hạn nộp" : "Nộp bài"}
                 </Button>
             </DialogTrigger>
+            {!isOverdue && (
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Nộp bài tập</DialogTitle>
@@ -175,6 +176,7 @@ export default function UploadSubmission({ assignment, onSuccess }: AssignmentsT
                     </div>
                 </form>
             </DialogContent>
+            )}
         </Dialog>
     )
 }

@@ -1,12 +1,9 @@
 // src/hooks/quiz-hooks.ts
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  keepPreviousData,
-} from "@tanstack/react-query";
-import { apiClient } from "../api/api-client";
-import { ApiResp } from "../api";
+
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api";
+import { ApiResp } from "@/lib/type";
+
 
 // ==== Types ====
 export interface QuizQuestion {
@@ -27,10 +24,11 @@ export interface QuizDetail {
 
 // ==== Queries ====
 export function useQuizzesQuery() {
+
   return useQuery({
     queryKey: ["quizzes"],
     queryFn: async () => {
-      const res = await apiClient.get<ApiResp<any[]>>("/quizzes");
+       const res = await apiClient.get<ApiResp<any[]>>("api/quizzes");
       if (!res.success) {
         const error: any = new Error(
           res.message || "Lỗi khi tải danh sách quiz"
@@ -41,16 +39,18 @@ export function useQuizzesQuery() {
       return res.data;
     },
   });
+
 }
 
 export function useQuiz(id: string | number | undefined) {
+
   return useQuery({
     queryKey: ["quiz", String(id)],
     enabled: !!id,
     staleTime: 60_000,
     queryFn: async () => {
       if (!id) throw new Error("ID bài quiz không hợp lệ");
-      const res = await apiClient.get<ApiResp<QuizDetail>>(`/quizzes/${id}`);
+   const res = await apiClient.get<ApiResp<QuizDetail>>(`api/quizzes/${id}`);
       if (!res.success) {
         const error: any = new Error(
           res.message || "Lỗi khi tải chi tiết quiz"
@@ -78,9 +78,7 @@ export function useQuizById(
   return useQuery<QuizDetail>({
     queryKey: ["quiz", id, role],
     queryFn: async () => {
-      const res = await apiClient.get<ApiResp<QuizDetail>>(
-        `/quizzes/${id}?role=${role}`
-      );
+      const res = await apiClient.get<ApiResp<QuizDetail>>(`api/quizzes/${id}?role=${role}`);
       if (!res.success) {
         const error: any = new Error(res.message || "Lỗi khi tải quiz theo ID");
         error.response = { data: res };
@@ -101,7 +99,7 @@ export function useQuizQuestionsPage(
     queryKey: ["quiz", quizId, "questions", page, size],
     queryFn: async () => {
       const res = await apiClient.get<ApiResp<any>>(
-        `/quizzes/${quizId}/questions?page=${page}&size=${size}`
+        `api/quizzes/${quizId}/questions?page=${page}&size=${size}`
       );
       if (!res.success) {
         const error: any = new Error(res.message || "Lỗi khi tải câu hỏi quiz");
@@ -115,11 +113,13 @@ export function useQuizQuestionsPage(
   });
 }
 
+
+
 // ==== Mutations ====
 export function useApproveQuiz() {
   return useMutation({
     mutationFn: async (quizData: any) => {
-      const res = await apiClient.post<ApiResp<any>>("/quizzes", quizData);
+                const res = await apiClient.post<ApiResp<any>>("api/quizzes", quizData);
       if (!res.success) {
         const error: any = new Error(res.message || "Lỗi khi duyệt quiz");
         error.response = { data: res };
@@ -129,13 +129,20 @@ export function useApproveQuiz() {
     },
   });
 }
-
+export function useCreateQuiz() {
+    return useMutation({
+        mutationFn: async (quizData: any) => {
+            const res = await apiClient.post<ApiResp<any>>("api/quizzes", quizData);
+            return res.data;
+        },
+    });
+}
 export function useUpdateQuizMeta(id: number) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: any) => {
       const res = await apiClient.patch<ApiResp<any>>(
-        `/quizzes/${id}`,
+        `api/quizzes/${id}`,
         payload
       );
       if (!res.success) {
@@ -159,7 +166,7 @@ export function useReplaceQuizContent(id: number) {
   return useMutation({
     mutationFn: async (payload: any) => {
       const res = await apiClient.put<ApiResp<any>>(
-        `/quizzes/${id}/content`,
+        `api/quizzes/${id}/content`,
         payload
       );
       if (!res.success) {
@@ -180,7 +187,7 @@ export function useUpsertQuizContent(id: number) {
   return useMutation({
     mutationFn: async (payload: any) => {
       const res = await apiClient.patch<ApiResp<any>>(
-        `/quizzes/${id}/content`,
+        `api/quizzes/${id}/content`,
         payload
       );
       if (!res.success) {
@@ -196,40 +203,40 @@ export function useUpsertQuizContent(id: number) {
   });
 }
 
-export function useDeleteQuizMutation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiClient.delete<ApiResp<any>>(`/quizzes/${id}`);
-      if (!res.success) {
-        const error: any = new Error(res.message || "Lỗi khi xóa quiz");
-        error.response = { data: res };
-        throw error;
-      }
-      return res.data;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["quizzes"] }),
-  });
-}
+// export function useDeleteQuizMutation() {
+//   const qc = useQueryClient();
+//   return useMutation({
+//     mutationFn: async (id: number) => {
+//       const res = await apiClient.delete<ApiResp<any>>(`/quizzes/${id}`);
+//       if (!res.success) {
+//         const error: any = new Error(res.message || "Lỗi khi xóa quiz");
+//         error.response = { data: res };
+//         throw error;
+//       }
+//       return res.data;
+//     },
+//     onSuccess: () => qc.invalidateQueries({ queryKey: ["quizzes"] }),
+//   });
+// }
 
-export function useDeleteQuizQuestionMutation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (args: { quizId: number; questionId: number }) => {
-      const res = await apiClient.delete<ApiResp<any>>(
-        `/quizzes/${args.quizId}/questions/${args.questionId}`
-      );
-      if (!res.success) {
-        const error: any = new Error(res.message || "Lỗi khi xóa câu hỏi quiz");
-        error.response = { data: res };
-        throw error;
-      }
-      return res.data;
-    },
-    onSuccess: (_, { quizId }) =>
-      qc.invalidateQueries({ queryKey: ["quiz", quizId, "questions"] }),
-  });
-}
+// export function useDeleteQuizQuestionMutation() {
+//   const qc = useQueryClient();
+//   return useMutation({
+//     mutationFn: async (args: { quizId: number; questionId: number }) => {
+//       const res = await apiClient.delete<ApiResp<any>>(
+//         `/quizzes/${args.quizId}/questions/${args.questionId}`
+//       );
+//       if (!res.success) {
+//         const error: any = new Error(res.message || "Lỗi khi xóa câu hỏi quiz");
+//         error.response = { data: res };
+//         throw error;
+//       }
+//       return res.data;
+//     },
+//     onSuccess: (_, { quizId }) =>
+//       qc.invalidateQueries({ queryKey: ["quiz", quizId, "questions"] }),
+//   });
+// }
 
 // utils/api-error.ts
 export function extractApiError(error: any): string {
@@ -248,3 +255,6 @@ export function extractApiError(error: any): string {
 
   return "Đã xảy ra lỗi không xác định";
 }
+
+
+

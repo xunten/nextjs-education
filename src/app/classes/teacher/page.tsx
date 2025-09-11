@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Navigation from "@/components/navigation";
 import {
   Card,
@@ -50,8 +50,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@radix-ui/react-dropdown-menu";
+
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+
 
 // Schema validate form lớp học
 const classSchema = yup.object().shape({
@@ -71,6 +73,7 @@ const classSchema = yup.object().shape({
 });
 
 export default function TeacherClassesPage() {
+  const [searchSubject, setSearchSubject] = useState("");
   const [user, setUser] = useState<any>(null);
   const [classes, setClasses] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -80,6 +83,22 @@ export default function TeacherClassesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<any>(null);
 
+  const uniqueSubjects =
+    subjects?.filter(
+      (subject, index, self) =>
+        subject &&
+        subject.id &&
+        index === self.findIndex((s) => s && s.id === subject.id)
+    ) || [];
+
+  const filteredSubjects = useMemo(() => {
+    if (!uniqueSubjects || uniqueSubjects.length === 0) {
+      return [];
+    }
+    return uniqueSubjects.filter((subject) =>
+      subject.subjectName.toLowerCase().includes(searchSubject.toLowerCase())
+    );
+  }, [uniqueSubjects, searchSubject]);
   // Form cho tạo/sửa lớp học
   const classForm = useForm({
     resolver: yupResolver(classSchema),
@@ -193,7 +212,9 @@ export default function TeacherClassesPage() {
       classForm.reset();
       setIsModalOpen(false);
       setEditingClass(null);
+
     } catch (err: any) {
+
       console.error(
         editingClass ? "Lỗi cập nhật lớp học:" : "Lỗi tạo lớp học:",
         err
@@ -203,6 +224,7 @@ export default function TeacherClassesPage() {
         (editingClass ? "Cập nhật lớp học thất bại!" : "Tạo lớp học thất bại!");
 
       toast.error(backendMessage);
+
     }
   };
 
@@ -236,14 +258,6 @@ export default function TeacherClassesPage() {
     return <div>Loading...</div>;
   }
 
-  const uniqueSubjects =
-    subjects?.filter(
-      (subject, index, self) =>
-        subject &&
-        subject.id &&
-        index === self.findIndex((s) => s && s.id === subject.id)
-    ) || [];
-
   const uniqueClasses =
     classes?.filter(
       (classItem, index, self) =>
@@ -271,14 +285,13 @@ export default function TeacherClassesPage() {
               <DropdownNotificationBell teacherId={user.userId} />
               <TeacherNotificationBell teacherId={user.userId} />
 
-              {/* Component quản lý môn học */}
               <SubjectManager
                 userId={user.userId}
                 subjects={uniqueSubjects}
                 reloadSubjects={async () => loadSubjects()}
               />
 
-              {/* Button tạo lớp học */}
+
               <Button
                 className="bg-green-700 hover:bg-green-800"
                 onClick={openCreateModal}
@@ -376,17 +389,53 @@ export default function TeacherClassesPage() {
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn môn học" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {uniqueSubjects.map((subject, index) => (
-                        <SelectItem
-                          key={`subject-${subject.id}-${index}`}
-                          value={subject.id.toString()}
-                        >
-                          {subject.subjectName}
-                        </SelectItem>
-                      ))}
+                    <SelectContent side="top" className="max-h-60">
+                      {/* Ô tìm kiếm với event handling cải thiện */}
+                      <div className="p-2 sticky top-0 bg-white z-10 border-b">
+                        <Input
+                          placeholder="Tìm kiếm môn học..."
+                          value={searchSubject}
+                          onChange={(e) => setSearchSubject(e.target.value)}
+                          onKeyDown={(e) => {
+                            // Prevent Select from closing when typing
+                            e.stopPropagation();
+                          }}
+                          onClick={(e) => {
+                            // Prevent Select from closing when clicking on input
+                            e.stopPropagation();
+                          }}
+                          className="h-8"
+                        />
+                      </div>
+
+                      {/* Danh sách đã filter */}
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredSubjects.length > 0 ? (
+                          filteredSubjects.map((subject, index) => (
+                            <SelectItem
+                              key={`subject-${subject.id}-${index}`}
+                              value={subject.id.toString()}
+                              className="cursor-pointer hover:bg-gray-100"
+                            >
+                              <div className="flex items-center">
+                                <span>{subject.subjectName}</span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="px-3 py-6 text-center">
+                            <div className="text-sm text-gray-500 mb-1">
+                              Không tìm thấy môn học
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Thử từ khóa khác hoặc kiểm tra lại chính tả
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </SelectContent>
                   </Select>
+
                   {classForm.formState.errors.subjectId && (
                     <p className="text-red-500 text-sm">
                       {classForm.formState.errors.subjectId.message}
