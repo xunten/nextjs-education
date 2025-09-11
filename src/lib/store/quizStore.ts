@@ -2,12 +2,11 @@
 
 import { create } from "zustand";
 import { nanoid } from "nanoid";
-import { FileItem, Question, Quiz, Settings } from "../type";
-import { AiQuizSettings } from "@/types/quiz.type";
+import { AiQuizSettings, Question, Quiz } from "@/types/quiz.type";
 
 type State = {
     files: FileItem[];
-    settings: Settings;
+    settings: AiQuizSettings;
     isGenerating: boolean;
     quiz: Quiz | null;
     hasUnsavedChanges: boolean;
@@ -18,7 +17,7 @@ type Actions = {
     removeFile: (id: string) => void;
     clearFiles: () => void;
 
-    updateSettings: (patch: Partial<Settings>) => void;
+    updateSettings: (patch: Partial<AiQuizSettings>) => void;
 
     setGenerating: (v: boolean) => void;
     setQuiz: (quiz: Quiz) => void;
@@ -37,16 +36,15 @@ type Actions = {
     ) => void;
     removeOption: (qid: string, optionId: string) => void;
 
-    /** Chuẩn hoá settings UI -> payload backend */
     getBackendSettings: () => AiQuizSettings;
 };
 
 const defaultSettings: Settings = {
-    generationMode: "GENERATE", // dùng khi gọi API (generate vs extract)
+    generationMode: "GENERATE",
     language: "Tiếng Việt",
-    questionType: "Multiple Choice", // UI enum
-    difficulty: "Medium",            // UI enum
-    mode: "Quiz",                    // UI enum
+    questionType: "Multiple Choice",
+    difficulty: "Medium",
+    mode: "Quiz",
     task: "Generate Quiz",
     numberOfQuestions: 10,
     title: "",
@@ -175,7 +173,7 @@ export const useQuizStore = create<State & Actions>((set, get) => ({
         };
 
         return {
-            numQuestions: s.numberOfQuestions,
+            numQuestions: s.numQuestions,
             quizTitle: s.title || "",
             language: language || "Tiếng Việt",
             questionType: (questionTypeMap[s.questionType] ?? s.questionType) as any,

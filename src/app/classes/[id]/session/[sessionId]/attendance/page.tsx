@@ -27,6 +27,7 @@ import { useParams } from "next/navigation";
 import { getSessionById, updateSessionStatus } from "@/services/classScheduleService";
 import { getStudentInClasses } from "@/services/classService";
 import { attendanceService } from "@/services/attendanceService";
+import Navigation from "@/components/navigation";
 
 interface Student {
   id: number;
@@ -51,7 +52,7 @@ interface SessionData {
   startPeriod: number;
   endPeriod: number;
   location: string;
-  status: "SCHEDULED" | "COMPLETED" | "PENDING" | "CANCELLED";
+  status: "SCHEDULED" | "COMPLETED" | "PENDING" | "CANCELLED" | "MAKEUP" | "HOLIDAY";
   note?: string;
 }
 
@@ -78,7 +79,7 @@ export default function AttendancePage() {
   useEffect(() => {
   const fetchData = async () => {
     try {
-      setIsLoading(true);
+      // setIsLoading(true);
       setError(null);
 
       const [sessionResponse, studentsResponse] = await Promise.all([
@@ -216,21 +217,20 @@ export default function AttendancePage() {
     setIsSaving(true);
     try {
       const attendanceData = {
-        sessionId,
-        attendance: Object.values(attendance),
-        sessionNote
+        noteSession: sessionNote,        // khớp với noteSession trong DTO
+        records: Object.values(attendance) // khớp với records trong DTO
       };
       console.log ("attendanceData: ", attendanceData)
-      const response = await attendanceService.saveAttendance(attendanceData);
+      const response = await attendanceService.saveAttendance(sessionId,attendanceData);
       
       if (!response.success) {
         throw new Error(response.message || 'Không thể lưu điểm danh');
       }
       
-      if (session.status === "PENDING" || session.status === "SCHEDULED") {
-        await updateSessionStatus(sessionId, "COMPLETED");
-        setSession(prev => prev ? { ...prev, status: "COMPLETED" } : null);
-      }
+      // if (session.status === "PENDING" || session.status === "SCHEDULED") {
+      //   await updateSessionStatus(sessionId, "COMPLETED");
+      //   setSession(prev => prev ? { ...prev, status: "COMPLETED" } : null);
+      // }
       
       alert("Điểm danh đã được lưu thành công!");
       
@@ -331,6 +331,8 @@ export default function AttendancePage() {
   }
 
   return (
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
     <div className="min-h-screen bg-gray-50/50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         
@@ -577,7 +579,9 @@ export default function AttendancePage() {
           </Button>
           <Button
             onClick={handleSaveAttendance}
-            disabled={isSaving || hasExistingAttendance || isAttendanceCompleted}
+            // disabled={isSaving || hasExistingAttendance || isAttendanceCompleted}
+            disabled={isSaving}
+
             className="bg-green-600 hover:bg-green-700 min-w-[120px] disabled:bg-gray-400"
           >
             {isSaving ? (
@@ -588,7 +592,7 @@ export default function AttendancePage() {
             ) : hasExistingAttendance ? (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Đã điểm danh
+                Cập nhật điểm danh
               </>
             ) : (
               <>
@@ -600,6 +604,7 @@ export default function AttendancePage() {
         </div>
         
       </div>
+    </div>
     </div>
   );
 }

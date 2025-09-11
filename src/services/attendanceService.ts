@@ -7,10 +7,9 @@ interface AttendanceRecord {
   note?: string;
 }
 
-interface AttendanceData {
-  sessionId: number;
-  attendance: AttendanceRecord[];
-  sessionNote: string;
+interface BulkAttendanceRequestDTO {
+  noteSession: string;
+  records: AttendanceRecord[];
 }
 
   interface SaveAttendanceResponse {
@@ -27,18 +26,18 @@ export const  attendanceService = {
 
 
 
-  async saveAttendance(attendanceData: AttendanceData): Promise<SaveAttendanceResponse> {
+    async saveAttendance(sessionId: number, data: BulkAttendanceRequestDTO): Promise<SaveAttendanceResponse> {
     try {
-        console.log ("sessionID", attendanceData.sessionId);
-        console.log ("mảng attendance", attendanceData.attendance);
+      console.log("sessionId:", sessionId);
+      console.log("payload:", data);
 
-      await apiClient.post(`/attendance/${attendanceData.sessionId}`, attendanceData.attendance);
+      await apiClient.post(`/attendance/${sessionId}`, data);
       return { success: true };
     } catch (error: any) {
-      console.error('Error saving attendance:', error);
+      console.error("Error saving attendance:", error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Không thể lưu điểm danh'
+        message: error.response?.data?.message || "Không thể lưu điểm danh"
       };
     }
   }

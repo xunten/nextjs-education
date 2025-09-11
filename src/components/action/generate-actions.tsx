@@ -79,16 +79,9 @@ export function GenerateActions() {
       const aiQuizSettings = getBackendSettings();
       console.log("Form settings (Backend format):", aiQuizSettings);
 
-      const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("accessToken") ?? undefined
-          : undefined;
-      console.log(token);
-
       await callGenerateAPI({
         file: realFile,
         settings: aiQuizSettings,
-        token,
       });
 
       router.push("quizzPreview");

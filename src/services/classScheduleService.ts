@@ -22,7 +22,7 @@ interface SessionData {
   startPeriod: number;
   endPeriod: number;
   location: string;
-  status: "SCHEDULED" | "COMPLETED" | "PENDING" | "CANCELLED";
+  status: "SCHEDULED" | "COMPLETED" | "MAKEUP" | "CANCELLED" | "HOLIDAY";
   note?: string;
 }
 

@@ -125,8 +125,6 @@ export default function StudentDashboard() {
     try {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-
-      // fetch API
       fetchStudentDashboard()
         .then((data: StudentDashboardResponse) => {
           setDashboardData((prev) => ({
@@ -134,6 +132,7 @@ export default function StudentDashboard() {
             enrolledClasses: data.enrolledClasses,
             totalAssignments: data.totalAssignments,
             completedAssignments: data.completedAssignments,
+            averageGrade: data.avgScore,
             upcomingDeadlines: data.upcomingDeadlines,
             pendingAssignments:
               data.totalAssignments - data.completedAssignments,
@@ -208,7 +207,7 @@ export default function StudentDashboard() {
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Chào mừng, {user.fullName}
+            Chào mừng, {user.fullName}!
           </h1>
           <p className="text-gray-600">
             Theo dõi tiến độ học tập và hoàn thành bài tập

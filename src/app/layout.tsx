@@ -5,8 +5,10 @@ import "./globals.css";
 import Footer from "@/components/footer/page";
 import Providers from "./providers";
 import { Bounce, ToastContainer } from "react-toastify";
-import 'sweetalert2/dist/sweetalert2.js'
-
+import "sweetalert2/dist/sweetalert2.js";
+import "katex/dist/katex.min.css";
+import "mathlive/static.css";
+import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {

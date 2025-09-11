@@ -12,7 +12,7 @@ interface SessionData {
   startPeriod: number;
   endPeriod: number;
   location: string;
-  status: "SCHEDULED" | "COMPLETED" | "PENDING" | "CANCELLED";
+  status: "SCHEDULED" | "COMPLETED" | "PENDING" | "CANCELLED" | "MAKEUP";
 }
 
 export default function WeeklyTimetableView({ sessions }: { sessions: SessionData[] }) {
@@ -190,6 +190,11 @@ export default function WeeklyTimetableView({ sessions }: { sessions: SessionDat
                           {s.status === "CANCELLED" && (
                             <div className="bg-red-200 text-red-800 px-2 py-1 rounded">
                               Đã hủy
+                            </div>
+                          )}
+                          {s.status === "MAKEUP" && (
+                            <div className="bg-orange-200 text-orange-800 px-2 py-1 rounded">
+                              Buổi bù
                             </div>
                           )}
                         </div>

@@ -119,6 +119,7 @@ export default function HomePage() {
                       if (selected) {
                         setData({
                           classId: selected.id,
+                          className: selected.className,
                           subject: selected.subject?.name || "",
                           createdBy: userId,
                         });

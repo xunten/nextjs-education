@@ -37,6 +37,7 @@ import { QuizzFormData } from "@/types/quiz.type";
 import { QuizForm } from "@/components/forms/QuizForm";
 import { quizFormSchema } from "@/lib/validation/quizFormSchema";
 import { useTeacherClasses } from "../../hook/useTeacherClasses";
+import Navigation from "@/components/navigation";
 interface QuizFormDataExtended extends QuizzFormData {
   files: File[];
   fileName: string;
@@ -55,7 +56,6 @@ export default function CreateQuizzPage() {
 
   const defaultValues: QuizFormDataExtended = {
     title: "",
-    grade: "",
     subject: "",
     startDate: new Date().toISOString().split("T")[0],
     endDate: new Date().toISOString().split("T")[0],
@@ -104,109 +104,112 @@ export default function CreateQuizzPage() {
     router.push("/quizzes/teacher/AIgenquiz");
   };
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-slate-800">Tạo Đề Thi Mới</h1>
-        <p className="text-slate-600 mt-2">
-          Lựa chọn phương thức tạo đề thi phù hợp với nhu cầu của bạn
-        </p>
-      </div>
+    <div>
+      <Navigation />
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-slate-800">Tạo Đề Thi Mới</h1>
+          <p className="text-slate-600 mt-2">
+            Lựa chọn phương thức tạo đề thi phù hợp với nhu cầu của bạn
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="shadow">
-          <CardHeader className=" rounded-t-lg p-2">
-            <div className="flex items-center space-x-3">
-              <div className="p-4 bg-blue-100 rounded-lg">
-                <FileEdit className=" text-blue-600" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="shadow">
+            <CardHeader className=" rounded-t-lg p-2">
+              <div className="flex items-center space-x-3">
+                <div className="p-4 bg-blue-100 rounded-lg">
+                  <FileEdit className=" text-blue-600" />
+                </div>
+                <div className="py-2">
+                  <CardTitle className="text-slate-800">
+                    Thông tin đề thi
+                  </CardTitle>
+                  <CardDescription>
+                    Nhập thông tin cơ bản cho đề thi mới
+                  </CardDescription>
+                </div>
               </div>
-              <div className="py-2">
-                <CardTitle className="text-slate-800">
-                  Thông tin đề thi
-                </CardTitle>
-                <CardDescription>
-                  Nhập thông tin cơ bản cho đề thi mới
-                </CardDescription>
-              </div>
+            </CardHeader>
+            <CardContent className=" space-y-5">
+              <QuizForm
+                defaultValues={defaultValues}
+                schema={quizFormSchema}
+                onSubmit={onsubmit}
+                classOptions={classes}
+              />
+            </CardContent>
+          </Card>
+
+          <div>
+            <div className="space-y-5">
+              <Card className="hover:shadow-lg transition-shadow border border-green-100">
+                <CardContent className=" flex gap-4 items-start">
+                  <div className="bg-green-100 p-3 rounded-lg mt-1">
+                    <BookOpen className="text-green-600 w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-base text-slate-800">
+                      Tạo đề bằng AI
+                    </h3>
+                    <p className="text-sm text-slate-600 mt-2">
+                      Sử dụng Ai để tạo đề dựa vào tài liệu
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="mt-3 text-green-600 border-green-300 hover:bg-green-50"
+                      onClick={handleAIGen}
+                    >
+                      Tạo đề
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow border border-purple-100">
+                <CardContent className=" flex gap-4 items-start">
+                  <div className="bg-purple-100 p-3 rounded-lg mt-1">
+                    <LayoutGrid className="text-purple-600 w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-base text-slate-800">
+                      Tạo đề từ Ngân hàng đề
+                    </h3>
+                    <p className="text-sm text-slate-600 mt-2">
+                      Tự động sinh đề thi dựa trên ngân hàng đề
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="mt-3 text-purple-600 border-purple-300 hover:bg-purple-50"
+                    >
+                      Tạo đề
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow border border-orange-100">
+                <CardContent className=" flex gap-4 items-start">
+                  <div className="bg-orange-100 p-3 rounded-lg mt-1">
+                    <FileText className="text-orange-600 w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-base text-slate-800">
+                      Tạo đề offline
+                    </h3>
+                    <p className="text-sm text-slate-600 mt-2">
+                      Upload đề thi giấy hoặc nhập thông tin từ file có sẵn
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="mt-3 text-orange-600 border-orange-300 hover:bg-orange-50"
+                    >
+                      Tải lên đề thi
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardHeader>
-          <CardContent className=" space-y-5">
-            <QuizForm
-              defaultValues={defaultValues}
-              schema={quizFormSchema}
-              onSubmit={onsubmit}
-              classOptions={classes}
-            />
-          </CardContent>
-        </Card>
-
-        <div>
-          <div className="space-y-5">
-            <Card className="hover:shadow-lg transition-shadow border border-green-100">
-              <CardContent className=" flex gap-4 items-start">
-                <div className="bg-green-100 p-3 rounded-lg mt-1">
-                  <BookOpen className="text-green-600 w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-base text-slate-800">
-                    Tạo đề bằng AI
-                  </h3>
-                  <p className="text-sm text-slate-600 mt-2">
-                    Sử dụng Ai để tạo đề dựa vào tài liệu
-                  </p>
-                  <Button
-                    variant="outline"
-                    className="mt-3 text-green-600 border-green-300 hover:bg-green-50"
-                    onClick={handleAIGen}
-                  >
-                    Tạo đề
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow border border-purple-100">
-              <CardContent className=" flex gap-4 items-start">
-                <div className="bg-purple-100 p-3 rounded-lg mt-1">
-                  <LayoutGrid className="text-purple-600 w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-base text-slate-800">
-                    Tạo đề từ Ngân hàng đề
-                  </h3>
-                  <p className="text-sm text-slate-600 mt-2">
-                    Tự động sinh đề thi dựa trên ngân hàng đề
-                  </p>
-                  <Button
-                    variant="outline"
-                    className="mt-3 text-purple-600 border-purple-300 hover:bg-purple-50"
-                  >
-                    Tạo đề
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow border border-orange-100">
-              <CardContent className=" flex gap-4 items-start">
-                <div className="bg-orange-100 p-3 rounded-lg mt-1">
-                  <FileText className="text-orange-600 w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-base text-slate-800">
-                    Tạo đề offline
-                  </h3>
-                  <p className="text-sm text-slate-600 mt-2">
-                    Upload đề thi giấy hoặc nhập thông tin từ file có sẵn
-                  </p>
-                  <Button
-                    variant="outline"
-                    className="mt-3 text-orange-600 border-orange-300 hover:bg-orange-50"
-                  >
-                    Tải lên đề thi
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>

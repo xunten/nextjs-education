@@ -16,6 +16,8 @@ import QuestionCard from "./QuestionCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import Navigation from "@/components/navigation";
 import { QuizResultDialog } from "../components/quiz-result-dialog";
+import { useQuiz } from "../../hook/quiz-hooks";
+import { QueryError } from "../../components/QueryError";
 
 interface QuizResultData {
   studentName: string;
@@ -30,8 +32,10 @@ interface QuizResultData {
 }
 
 export default function QuizPage() {
-  const { id } = useParams();
-  const [quiz, setQuiz] = useState<any>(null);
+  const params = useParams<{ id: string }>();
+  const id = params.id;
+
+  const { data: quiz, isLoading, error, refetch, isFetching } = useQuiz(id);
   const [quizAnswers, setQuizAnswers] = useState<
     Record<number, string | string[]>
   >({});
@@ -40,11 +44,14 @@ export default function QuizPage() {
   const [isSubmited, setIsSubmited] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  // 2) Sửa chỗ tính currentQuestions để an toàn khi quiz chưa sẵn
   const QUESTIONS_PER_PAGE = 5;
-  const currentQuestions = quiz?.questions.slice(
-    currentPage * QUESTIONS_PER_PAGE,
-    (currentPage + 1) * QUESTIONS_PER_PAGE
-  );
+  const currentQuestions =
+    quiz?.questions?.slice(
+      currentPage * QUESTIONS_PER_PAGE,
+      (currentPage + 1) * QUESTIONS_PER_PAGE
+    ) ?? [];
+
   const [quizResult, setQuizResult] = useState<QuizResultData | null>(null);
   const [isResultOpen, setIsResultOpen] = useState(false);
 
@@ -52,64 +59,37 @@ export default function QuizPage() {
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch quiz data
+  // Khởi tạo timer khi có quiz data
   useEffect(() => {
-    const fetchQuiz = async () => {
-      try {
-        const res = await fetch(`http://localhost:8080/api/quizzes/${id}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+    if (quiz && quiz.timeLimit && !startTime) {
+      const now = new Date();
+      setStartTime(now);
+      setTimeLeft(quiz.timeLimit * 60); // Convert minutes to seconds
+    }
+  }, [quiz, startTime]);
 
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
-        const data = await res.json();
-        setQuiz(data);
-        setStartTime(new Date());
-        setTimeLeft(data.timeLimit * 60);
-
-        // init answers
-        const initialAnswers = data.questions?.reduce(
-          (acc: Record<number, string | string[]>, q: any) => {
-            acc[q.id] = "";
-            return acc;
-          },
-          {}
-        );
-        setQuizAnswers(initialAnswers);
-      } catch (err) {
-        console.error("Lỗi lấy bài quiz:", err);
-      }
-    };
-
-    fetchQuiz();
-  }, [id, token]);
-
-  // Timer countdown
+  // Timer logic
   useEffect(() => {
     if (isSubmited || isSubmitting || timeLeft <= 0) {
-      // Dừng timer nếu đã nộp hoặc hết giờ
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
 
-      // Auto-submit một lần duy nhất khi hết giờ và chưa nộp
-      if (timeLeft <= 0 && !isSubmited && !isSubmitting) {
+      if (timeLeft <= 0 && !isSubmited && !isSubmitting && startTime) {
         handleSubmit();
       }
 
       return;
     }
 
-    // Clear timer cũ trước khi tạo mới
     if (timerRef.current) clearInterval(timerRef.current);
 
     timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
+      setTimeLeft((prev) => {
+        const newTime = prev - 1;
+        return newTime;
+      });
     }, 1000);
 
     return () => {
@@ -118,7 +98,16 @@ export default function QuizPage() {
         timerRef.current = null;
       }
     };
-  }, [timeLeft, isSubmitting, isSubmited]);
+  }, [timeLeft, isSubmitting, isSubmited, startTime]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -147,12 +136,15 @@ export default function QuizPage() {
   };
 
   const calculateProgress = () => {
-    if (!quiz) return 0;
+    if (!quiz || !quiz.questions?.length) return 0;
+    if (!quizAnswers) return 0;
+
     const answeredCount = Object.values(quizAnswers).filter(
       (answer) =>
         (Array.isArray(answer) && answer.length > 0) ||
         (!Array.isArray(answer) && answer !== "")
     ).length;
+
     return (answeredCount / quiz.questions.length) * 100;
   };
 
@@ -196,7 +188,7 @@ export default function QuizPage() {
       if (!studentId) throw new Error("Student ID not found");
 
       const submissionPayload = {
-        quizId: parseInt(id as string, 10),
+        quizId: Number.parseInt(id as string, 10),
         studentId,
         startAt: startTime.toISOString(),
         endAt: new Date().toISOString(),
@@ -256,34 +248,23 @@ export default function QuizPage() {
       setIsSubmitting(false);
     }
   }, [id, startTime, quiz, quizAnswers, isSubmitting, isSubmited, token]);
-
-  if (!quiz) {
+  if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <Skeleton className="h-8 w-3/4" />
-                <Skeleton className="h-5 w-1/2 mt-2" />
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Skeleton className="h-6 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <div className="grid grid-cols-5 gap-2">
-                  {[...Array(10)].map((_, i) => (
-                    <Skeleton key={i} className="h-10 w-10 rounded-full" />
-                  ))}
-                </div>
-                <Skeleton className="h-10 w-full mt-4" />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
+      <QueryError
+        error={error}
+        title="Không tải được bài quiz"
+        onRetry={() => refetch()}
+        onGoBack={() => history.back()}
+        isRetrying={isFetching}
+      />
     );
   }
-
+  if (isLoading || isFetching) {
+    return <QuizSkeleton />;
+  }
+  if (!quiz) {
+    return <QuizSkeleton />;
+  }
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
@@ -329,7 +310,10 @@ export default function QuizPage() {
                       index / QUESTIONS_PER_PAGE
                     );
                     const isInCurrentPage = pageOfQuestion === currentPage;
-                    const isAnswered = !!quizAnswers[q.id];
+                    const answer = quizAnswers[q.id];
+                    const isAnswered = Array.isArray(answer)
+                      ? answer.length > 0
+                      : answer !== "";
 
                     return (
                       <Button
@@ -425,6 +409,79 @@ export default function QuizPage() {
           data={quizResult}
         />
       )}
+    </div>
+  );
+}
+// 1) Tạo component skeleton
+function QuizSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar */}
+          <Card className="lg:col-span-1 sticky top-4 h-fit">
+            <CardHeader>
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-1/3 mt-2" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-10" />
+                </div>
+                <Skeleton className="h-3 w-full" />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-14" />
+                </div>
+
+                <div className="grid grid-cols-5 gap-2">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-10 rounded-full" />
+                  ))}
+                </div>
+              </div>
+
+              <Skeleton className="h-10 w-full mt-4" />
+            </CardContent>
+          </Card>
+
+          {/* Content */}
+          <div className="lg:col-span-3 space-y-6">
+            <Card>
+              <CardContent className="space-y-6 py-6">
+                {/* 5 item - tương ứng QUESTIONS_PER_PAGE */}
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="space-y-3">
+                    <Skeleton className="h-5 w-2/3" />
+                    {/* vài dòng mô tả/option giả */}
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-11/12" />
+                    <Skeleton className="h-4 w-10/12" />
+                    {/* các option */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  </div>
+                ))}
+
+                <div className="flex justify-between pt-4">
+                  <Skeleton className="h-10 w-28" />
+                  <Skeleton className="h-10 w-28" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

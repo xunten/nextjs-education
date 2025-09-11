@@ -51,7 +51,6 @@ type UiStudent = {
   className: string;
   classId?: number;
   avgGrade: number;
-  // Các phần API chưa có -> giữ nguyên/mặc định
   trend: "up" | "down" | "stable";
   completionRate: number;
   subjects: {
@@ -164,6 +163,7 @@ export default function TeacherGradesPage() {
 
   // Các thống kê giữ nguyên nhưng dựa trên dữ liệu mới
   const filteredStudents = getFilteredStudents();
+  console.log("filteredStudents :", filteredStudents);
 
   const distribution = useMemo(() => {
     const excellent = filteredStudents.filter((s) => s.avgGrade >= 9).length;
@@ -410,10 +410,10 @@ export default function TeacherGradesPage() {
                         </div>
                         <Avatar className="h-16 w-16 mx-auto mb-3">
                           <AvatarFallback className="text-lg">
-                            {student.name.charAt(0)}
+                            {student?.name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
-                        <h3 className="font-medium">{student.name}</h3>
+                        <h3 className="font-medium">{student?.name}</h3>
                         <p className="text-sm text-gray-500 mb-2">
                           {student.className}
                         </p>
@@ -630,7 +630,7 @@ export default function TeacherGradesPage() {
                             <div className="flex items-center space-x-3">
                               <Avatar className="h-8 w-8">
                                 <AvatarFallback>
-                                  {student.studentName.charAt(0)}
+                                  {student.studentName?.charAt(0)}
                                 </AvatarFallback>
                               </Avatar>
                               <div>

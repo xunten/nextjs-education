@@ -24,11 +24,11 @@ export const quizFormSchema = yup.object().shape({
     .of(
       yup
         .mixed<File>()
-        .test("is-docx", "Chỉ chấp nhận tệp .docx", (file) =>
-          file ? file.name.endsWith(".docx") : false
+        .test("is-pdf", "Chỉ chấp nhận tệp .pdf", (file) =>
+          file ? file.name.endsWith(".pdf") : false
         )
     )
-    .min(1, "Vui lòng tải lên ít nhất 1 tệp .docx"),
+    .min(1, "Vui lòng tải lên ít nhất 1 tệp .pdf"),
   classId: yup.number().required(), // ẩn trong form, nhưng cần validate nếu bạn submit
   createdBy: yup.number().required(), // giống classId
 });

@@ -34,7 +34,8 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { Plus, X, Calendar as CalendarIcon, Eye } from "lucide-react";
 import { createClassSchedule, getAllLocations } from "@/services/classScheduleService";
-import { toast } from "sonner";
+import { toast } from 'react-toastify';
+// import { toast } from "sonner";
 
 // Utility function thay thế cho cn
 const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
@@ -151,7 +152,7 @@ export default function ClassSchedulePage() {
   const router = useRouter();
   const params = useParams();
   const classId = params.id as string;
-
+  const [searchLocation, setSearchLocation] = useState("");
   const [locations, setLocations] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [previewSessions, setPreviewSessions] = useState<any[]>([]);
@@ -256,12 +257,18 @@ export default function ClassSchedulePage() {
       };
       console.log("Payload gửi đi:", payload);
       await createClassSchedule(payload);
-      toast.success("Tạo lịch học thành công!");
-      router.push(`/classes/${classId}`);
-    } catch (err) {
-      console.error("Lỗi khi tạo lịch học:", err);
+    toast.success("Tạo lịch học thành công!");
+    router.push(`/classes/${classId}`);
+  } catch (err: any) {
+    console.error("Lỗi khi tạo lịch học:", err);
+
+    // Nếu backend trả message "Lớp này đã có lịch học" thì hiển thị cảnh báo
+    if (err.response?.status === 400 || err.response?.status === 409) {
+      toast.error(err.response.data?.message || "Lớp này đã có lịch học, không thể tạo mới.");
+    } else {
       toast.error("Có lỗi xảy ra khi tạo lịch học.");
     }
+  }
   };
 
   return (
@@ -405,32 +412,60 @@ export default function ClassSchedulePage() {
                       )}
                     </div>
                     {/* Địa điểm */}
-                    <div className="sm:col-span-2">
-                      <Label>Địa điểm</Label>
-                      <Select
-                        value={watch(`slots.${index}.locationId`)?.toString() || ""}
-                        onValueChange={(val) => {
-                          const locationId = val ? Number(val) : null;
-                          setValue(`slots.${index}.locationId`, locationId);
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Chọn phòng học" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {locations.map((loc) => (
-                            <SelectItem key={loc.id} value={loc.id.toString()}>
-                              {loc.roomName}
-                            </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.slots?.[index]?.locationId && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.slots[index]?.locationId?.message}
-                        </p>
-                      )}
-                    </div>
+<div className="sm:col-span-2">
+  <Label>Địa điểm</Label>
+  <Select
+    value={watch(`slots.${index}.locationId`)?.toString() || ""}
+    onValueChange={(val) => {
+      const locationId = val ? Number(val) : null;
+      setValue(`slots.${index}.locationId`, locationId);
+    }}
+  >
+    <SelectTrigger className="w-full">
+      <SelectValue placeholder="Chọn phòng học" />
+    </SelectTrigger>
+    <SelectContent side="top" className="max-h-60">
+      {/* Ô tìm kiếm */}
+      <div className="p-2 sticky top-0 bg-white z-10 border-b">
+        <Input
+          placeholder="Tìm kiếm phòng học..."
+          value={searchLocation}
+          onChange={(e) => setSearchLocation(e.target.value)}
+          onKeyDown={(e) => e.stopPropagation()} // không đóng Select khi gõ
+          onClick={(e) => e.stopPropagation()}
+          className="h-8"
+        />
+      </div>
+
+      {/* Danh sách filter */}
+      <div className="max-h-48 overflow-y-auto">
+        {locations.filter((loc) =>
+          loc.roomName.toLowerCase().includes(searchLocation.toLowerCase())
+        ).length > 0 ? (
+          locations
+            .filter((loc) =>
+              loc.roomName.toLowerCase().includes(searchLocation.toLowerCase())
+            )
+            .map((loc) => (
+              <SelectItem key={loc.id} value={loc.id.toString()}>
+                {loc.roomName}
+              </SelectItem>
+            ))
+        ) : (
+          <div className="px-3 py-6 text-center text-sm text-gray-500">
+            Không tìm thấy phòng học
+          </div>
+        )}
+      </div>
+    </SelectContent>
+  </Select>
+
+  {errors.slots?.[index]?.locationId && (
+    <p className="text-red-500 text-sm mt-1">
+      {errors.slots[index]?.locationId?.message}
+    </p>
+  )}
+</div>
                   </div>
                 ))}
               </div>

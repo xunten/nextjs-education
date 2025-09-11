@@ -27,6 +27,8 @@ import {
   getClasses,
   createJoinRequest,
   getClassById,
+  searchClasses,      
+  getLatestClasses,
 } from "@/services/classService";
 import StudentNotificationToast from "@/components/classDetails/StudentNotificationToast";
 
@@ -66,7 +68,7 @@ export default function StudentClassesPage() {
   // Load lớp gợi ý khi mở tab tìm kiếm lần đầu
   useEffect(() => {
     if (activeTab === "search" && searchResults.length === 0 && !searchTerm) {
-      getClasses().then((data) => {
+      getLatestClasses().then((data) => {
         setSearchResults(Array.isArray(data) ? data : data || []);
       });
     }
@@ -132,7 +134,15 @@ export default function StudentClassesPage() {
   const handleSearch = async () => {
     setLoadingSearch(true);
     try {
-      // Gọi API search ở đây
+      if (searchTerm.trim() === "") {
+        // Nếu không nhập gì thì load lại 10 lớp gần nhất
+        const latest = await getLatestClasses();
+        setSearchResults(latest);
+      } else {
+        const results = await searchClasses(searchTerm);
+        setSearchResults(results);
+        console.log("lớp tìm kiếm: ", searchResults, "searchTerm: " ,searchTerm)
+      }
     } catch (err) {
       console.error("Lỗi tìm kiếm lớp:", err);
     }

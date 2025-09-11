@@ -10,16 +10,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useRouter } from "next/navigation";
 
 export function ConfirmLeaveDialog({
   open = false,
   onCancel = () => {},
-  onConfirm = () => {},
 }: {
   open?: boolean;
   onCancel?: () => void;
-  onConfirm?: () => void;
 }) {
+  const router = useRouter();
+
+  function handleConfirm() {
+    router.back(); // quay lại trang trước
+  }
+
   return (
     <AlertDialog open={open}>
       <AlertDialogContent>
@@ -33,7 +38,7 @@ export function ConfirmLeaveDialog({
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>Ở lại</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
+            onClick={handleConfirm}
             className="bg-red-600 hover:bg-red-700"
           >
             Rời trang
