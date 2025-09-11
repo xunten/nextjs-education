@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Upload, Settings } from "lucide-react"
+import { Upload, FilePenLine } from "lucide-react"
 import { useForm, FieldValues } from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup"
 import * as yup from "yup"
@@ -13,6 +13,8 @@ import { updateAssignment } from "@/services/assignmentService"
 import { Assignment } from "@/types/assignment"
 import { ClassItem } from "@/types/classes"
 import { toast } from "react-toastify"
+import { format } from "date-fns"
+import { getFileName } from "@/untils/file"
 
 interface UpdateAssignmentProps {
     assignment: Assignment
@@ -99,7 +101,7 @@ export default function UpdateAssignment({ assignment, classData, onSuccess }: U
             const formData = new FormData()
             formData.append("title", data.title)
             formData.append("description", data.description || "")
-            formData.append("dueDate", data.dueDate.toISOString())
+            formData.append("dueDate", format(data.dueDate, "yyyy-MM-dd'T'HH:mm:ss"))
             formData.append("maxScore", data.maxScore.toString())
             formData.append("classId", data.classId.toString())
 
@@ -122,12 +124,11 @@ export default function UpdateAssignment({ assignment, classData, onSuccess }: U
     return (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                    <Settings className="h-4 w-4 mr-1" />
-                    Chỉnh sửa
+                <Button variant="outline" size="sm" className="">
+                    <FilePenLine className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[600px] max-h-[400px] overflow-y-auto">
+            <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Chỉnh sửa bài tập</DialogTitle>
                     <DialogDescription>Cập nhật thông tin cho bài tập {assignment.title}</DialogDescription>
@@ -181,22 +182,31 @@ export default function UpdateAssignment({ assignment, classData, onSuccess }: U
                     <div className="space-y-2">
                         <Label htmlFor="file">Thay thế tệp đính kèm (tùy chọn)</Label>
                         <div
-                            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50"
+                            className="border-2 border-dashed border-gray-300 rounded-lg p-2 text-center cursor-pointer hover:bg-gray-50"
                             onClick={() => document.getElementById("update-file")?.click()}
                         >
                             <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                             <p className="text-sm text-gray-600">Kéo thả tệp hoặc click để chọn</p>
+
+                            {/* Nếu user chọn file mới */}
                             {watchedFile && <p className="text-xs text-gray-500 mt-2">{watchedFile.name}</p>}
+
+                            {/* Nếu chưa chọn file mới thì hiển thị file cũ */}
+                            {!watchedFile && assignment.filePath && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                    File hiện tại: <span className="underline">{getFileName(assignment.filePath ?? "")}</span>
+                                </p>
+                            )}
                         </div>
                         <input
                             id="update-file"
                             type="file"
                             className="hidden"
-                            {...register("file")}
                             onChange={(e) => setValue("file", e.target.files?.[0] || null)}
                         />
                         {errors.file && <p className="text-red-500 text-sm">{errors.file.message}</p>}
                     </div>
+
                     {/* Submit */}
                     <Button type="submit" className="w-full">
                         Lưu thay đổi
@@ -208,10 +218,10 @@ export default function UpdateAssignment({ assignment, classData, onSuccess }: U
 }
 
 function convertUTCToLocalInput(utcDateString?: string) {
-  if (!utcDateString) return ""
+    if (!utcDateString) return ""
 
-  const date = new Date(utcDateString) // UTC từ backend
-  const tzOffset = date.getTimezoneOffset() * 60000 // mili giây
-  const localISOTime = new Date(date.getTime() - tzOffset).toISOString().slice(0, 16)
-  return localISOTime
+    const date = new Date(utcDateString) // UTC từ backend
+    const tzOffset = date.getTimezoneOffset() * 60000 // mili giây
+    const localISOTime = new Date(date.getTime() - tzOffset).toISOString().slice(0, 16)
+    return localISOTime
 }

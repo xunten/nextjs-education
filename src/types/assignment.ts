@@ -10,6 +10,8 @@ export interface Assignment {
   filePath?: string | null;
   fileType?: string | null;
   fileSize?: number | null;
+
+  submissions?: Submission[];
 }
 
 // types/submission.ts
@@ -34,6 +36,11 @@ export interface Submission {
     fullName: string;
     email: string;
     avatarBase64?: string | null;
+  };
+
+  assignment: {
+    id: number;
+    title: string;  
   };
 }
 

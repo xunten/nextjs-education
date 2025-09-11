@@ -20,6 +20,8 @@ import { getAssignmentsByClassId } from "@/services/assignmentService"
 import { getDocumentsByClassId } from "@/services/documentService"
 import { DocumentsTab } from "@/components/classDetails/DocumentsTab"
 import AssignmentNotificationToast from "@/components/assignment/AssignmentNotificationToast";
+import { getSubmissionsByClassId } from "@/services/submissionService";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 export default function ClassDetailPage() {
   const params = useParams()
@@ -54,28 +56,28 @@ export default function ClassDetailPage() {
         console.log("Fetching class data for ID:", classId)
 
         getClassById(classId)
-         .then((data) => {
-           console.log("Classes data:", data);
-           setClassData(data)
-         })
-         .catch((err) => console.error("Lỗi khi lấy lớp:", err)); 
-         
-         
+          .then((data) => {
+            console.log("Classes data:", data);
+            setClassData(data)
+          })
+          .catch((err) => console.error("Lỗi khi lấy lớp:", err));
 
-         getStudentInClasses(classId)
-         .then((data) => {
-           console.log("Classes data:", data);
-           setStudents(data)
-         })
+
+
+        getStudentInClasses(classId)
+          .then((data) => {
+            console.log("Classes data:", data);
+            setStudents(data)
+          })
         //  .catch((err) => console.error("Lỗi khi lấy lớp:", err)); 
         // setClassData(classRes.data)
         // setStudents(studentsRes.data)
 
         getAssignmentsByClassId(classId)
-         .then((data) => {
-           console.log("Assignments data:", data);
-           setAssignments(data)
-         })
+          .then((data) => {
+            console.log("Assignments data:", data);
+            setAssignments(data)
+          })
         // Dữ liệu mẫu
         // setAssignments([
         //   { id: 101, status: "active" },
@@ -84,10 +86,10 @@ export default function ClassDetailPage() {
         // ])
 
         getDocumentsByClassId(classId)
-         .then((data) => {
-           console.log("Documents data:", data);
-           setDocuments(data)
-         })
+          .then((data) => {
+            console.log("Documents data:", data);
+            setDocuments(data)
+          })
 
         // setDocuments([
         //   { id: 1, title: "Tài liệu giải tích" },
@@ -111,8 +113,21 @@ export default function ClassDetailPage() {
   }
 
   // if (!user || !classData) return <div>Đang tải dữ liệu...</div>
-  if (!classData) return <div>Đang tải dữ liệu...</div>
-  
+  // if (!classData) return <div>Đang tải dữ liệu...</div>
+  if (!classData) {
+    return (
+      <div>
+        <Navigation />
+        <div className="container mx-auto p-6 h-96 flex justify-center items-center">
+          <DotLottieReact
+            src="/animations/loading.lottie"
+            loop
+            autoplay
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -137,12 +152,12 @@ export default function ClassDetailPage() {
             </div>
 
 
-{
-            (localStorage.role === "student") &&
-            <AssignmentNotificationToast classId={classData.id} />
-}
-            
-            
+            {
+              (localStorage.role === "student") &&
+              <AssignmentNotificationToast classId={classData.id} />
+            }
+
+
             {/* Bên phải: Dropdown lịch học */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -152,12 +167,12 @@ export default function ClassDetailPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {(localStorage.role === "teacher") &&
-                <DropdownMenuItem asChild>
-                  <Link href={`/classes/teacher/schedule/create/${classData.id}`}>
-                    ➕ Tạo lịch
-                  </Link>
-                </DropdownMenuItem>
-                  }
+                  <DropdownMenuItem asChild>
+                    <Link href={`/classes/teacher/schedule/create/${classData.id}`}>
+                      ➕ Tạo lịch
+                    </Link>
+                  </DropdownMenuItem>
+                }
                 <DropdownMenuItem asChild>
                   <Link href={`/classes/teacher/schedule/session/${classData.id}`}>
                     👀 Xem lịch
@@ -193,7 +208,7 @@ export default function ClassDetailPage() {
           </TabsContent>
 
           <TabsContent value="assignments">
-            <AssignmentsTab assignments={assignments} classData={classData} />
+            <AssignmentsTab assignments={assignments} classData={classData} countstudents={students.length} />
             {/* <div className="text-gray-600">Chức năng bài tập sẽ được cập nhật sau...</div> */}
           </TabsContent>
 

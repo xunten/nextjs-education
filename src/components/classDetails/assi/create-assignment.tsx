@@ -14,6 +14,8 @@ import * as yup from "yup"
 import { createAssignment } from "@/services/assignmentService"
 import { ClassItem } from "@/types/classes"
 import { on } from "events"
+import { format } from "date-fns"
+import { toast } from "react-toastify"
 
 interface CreateAssignmentFormData {
   title: string
@@ -68,7 +70,7 @@ export default function CreateAssignment({ classData, onAssignmentCreated }: Cre
       const formData = new FormData()
       formData.append("title", data.title)
       formData.append("description", data.description || "")
-      formData.append("dueDate", data.dueDate.toISOString())
+      formData.append("dueDate", format(data.dueDate, "yyyy-MM-dd'T'HH:mm:ss"))
       formData.append("maxScore", data.maxScore.toString())
       formData.append("classId", data.classId.toString())
       if (data.file) formData.append("file", data.file)
@@ -80,11 +82,12 @@ export default function CreateAssignment({ classData, onAssignmentCreated }: Cre
     //   onAssignmentCreated(newAssignment)
       reset()
       setIsDialogOpen(false)
-      alert("Tạo bài tập thành công!")
+      toast.success("Tạo bài tập thành công!");
     } catch {
-      alert("Có lỗi xảy ra khi tạo bài tập.")
+      toast.error("Có lỗi xảy ra khi tạo bài tập.")
     }
   }
+  const selectedClass = classData.find(c => c.id === watchedClassId);
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -95,7 +98,7 @@ export default function CreateAssignment({ classData, onAssignmentCreated }: Cre
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Tạo bài tập cho {classData[0]?.className}</DialogTitle>
+          <DialogTitle>Tạo bài tập cho {selectedClass?.className || "lớp học"}</DialogTitle>
           <DialogDescription>Nhập thông tin bài tập</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -110,11 +113,13 @@ export default function CreateAssignment({ classData, onAssignmentCreated }: Cre
           </div>
           <div className="space-y-2">
             <Label htmlFor="dueDate">Hạn nộp</Label>
-            <Input id="dueDate" type="date" {...register("dueDate", { valueAsDate: true })} />
+            <Input id="dueDate" type="datetime-local" {...register("dueDate", { valueAsDate: true })} />
+            {errors.dueDate && <p className="text-red-500 text-sm">{errors.dueDate.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="maxScore">Điểm tối đa</Label>
             <Input id="maxScore" type="number" {...register("maxScore", { valueAsNumber: true })} />
+            {errors.maxScore && <p className="text-red-500 text-sm">{errors.maxScore.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="classId">Chọn lớp</Label>
@@ -126,6 +131,7 @@ export default function CreateAssignment({ classData, onAssignmentCreated }: Cre
                 {classData.map(cls => <SelectItem key={cls.id} value={cls.id.toString()}>{cls.className}</SelectItem>)}
               </SelectContent>
             </Select>
+            {errors.classId && <p className="text-red-500 text-sm">{errors.classId.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="file">Tệp đính kèm</Label>
