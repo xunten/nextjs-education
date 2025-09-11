@@ -2,120 +2,123 @@ import { api } from "@/lib/api";
 import { QuizCard } from "@/types/quiz.type";
 
 export type QuizFilters = {
-    page?: number;
-    pageSize?: number;
-    classId?: number;
-    status?: string;
-    search?: string;
+  page?: number;
+  pageSize?: number;
+  classId?: number;
+  status?: string;
+  search?: string;
 };
 export type ApiResp<T> = {
-    success: boolean;
-    message: string;
-    data: T;
-    timestamp: number;
+  success: boolean;
+  message: string;
+  data: T;
+  timestamp: number;
 };
 export function buildQueryString(filters: QuizFilters) {
-    const qs = new URLSearchParams();
-    if (filters.page) qs.set("page", String(filters.page));
-    if (filters.pageSize) qs.set("pageSize", String(filters.pageSize));
-    if (filters.classId) qs.set("classId", String(filters.classId));
-    if (filters.status) qs.set("status", filters.status);
-    if (filters.search) qs.set("search", filters.search);
-    const s = qs.toString();
-    return s ? `?${s}` : "";
+  const qs = new URLSearchParams();
+  if (filters.page) qs.set("page", String(filters.page));
+  if (filters.pageSize) qs.set("pageSize", String(filters.pageSize));
+  if (filters.classId) qs.set("classId", String(filters.classId));
+  if (filters.status) qs.set("status", filters.status);
+  if (filters.search) qs.set("search", filters.search);
+  const s = qs.toString();
+  return s ? `?${s}` : "";
 }
 
 export function toQuizCard(quiz: any): QuizCard {
-    return {
-        id: quiz.id,
-        title: quiz.title || "Không có tiêu đề",
-        description: quiz.description || "Không có mô tả",
-        className: quiz.className || "Chưa rõ lớp",
-        duration: quiz.timeLimit || 0,
-        totalQuestions: quiz.questions?.length || quiz.totalQuestions || 0,
-        totalStudents: quiz.totalStudents ?? 0,
-        createdAt: quiz.createdAt ?? null,
-        dueDate: quiz.endDate ?? quiz.dueDate ?? "",
-        subject: quiz.subject ?? "Chưa có môn",
-        studentsSubmitted: quiz.studentsSubmitted || 0,
-        status: quiz.status ?? "open",
-        classID: quiz.classID ?? quiz.classId,
-        createBy: quiz.createBy,
-        grade: quiz.grade,
-    };
+  return {
+    id: quiz.id,
+    title: quiz.title || "Không có tiêu đề",
+    description: quiz.description || "Không có mô tả",
+    className: quiz.className || "Chưa rõ lớp",
+    duration: quiz.timeLimit || 0,
+    totalQuestions: quiz.questions?.length || quiz.totalQuestions || 0,
+    totalStudents: quiz.totalStudents ?? 0,
+    createdAt: quiz.createdAt ?? null,
+    dueDate: quiz.endDate ?? quiz.dueDate ?? "",
+    subject: quiz.subject ?? "Chưa có môn",
+    studentsSubmitted: quiz.studentsSubmitted || 0,
+    status: quiz.status ?? "open",
+    classID: quiz.classID ?? quiz.classId,
+    createBy: quiz.createBy,
+    grade: quiz.grade,
+  };
 }
 
 // endpoints
 
 export async function fetchQuizzes(filters: QuizFilters = {}) {
-    const qs = buildQueryString(filters); // tạo query string từ filters
-    const data = await api<any>(`/api/quizzes${qs}`);
-    return data ?? [];
+  const qs = buildQueryString(filters); // tạo query string từ filters
+  const data = await api<any>(`/api/quizzes${qs}`);
+  return data ?? [];
 }
 export async function fetchQuizzesByTeacher() {
-    const data = await api<ApiResp<any[]>>(`/api/quizzes/teacher`);
-    console.log('data :', data);
-    return data.data ?? [];
+  const data = await api<ApiResp<any[]>>(`/api/quizzes/teacher`);
+  console.log("data :", data);
+  return data.data ?? [];
 }
 export async function fetchQuizById(id: number) {
-    return api<any>(`/api/quizzes/${id}`);
+  return api<any>(`/api/quizzes/${id}`);
 }
 
 // lib/api.ts
 export async function createQuiz(payload: any) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-    const token =
-        typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
-    const res = await fetch(`${baseUrl}/api/quizzes`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
-    });
+  const res = await fetch(`${baseUrl}/api/quizzes`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
 
-    if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Tạo quiz thất bại");
-    }
-    return res.json();
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || "Tạo quiz thất bại");
+  }
+  return res.json();
 }
 
-
 export async function updateQuiz(id: number, payload: any) {
-    return api<any>(`/api/quizzes/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-    });
+  return api<any>(`/api/quizzes/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function deleteQuiz(id: number) {
-    return api<void>(`/api/quizzes/${id}`, {
-        method: "DELETE",
-    });
+  return api<void>(`/api/quizzes/${id}`, {
+    method: "DELETE",
+  });
 }
 export class ApiError extends Error {
-    status?: number;
-    body?: unknown;
-    constructor(msg: string, status?: number, body?: unknown) {
-        super(msg);
-        this.status = status;
-        this.body = body;
-    }
+  status?: number;
+  body?: unknown;
+  constructor(msg: string, status?: number, body?: unknown) {
+    super(msg);
+    this.status = status;
+    this.body = body;
+  }
 }
 
 // utils/api-error.ts
 export async function handleFetchError(res: Response) {
-    // Server trả JSON dạng { success:false, message, ... }
-    let payload: any = null;
-    try { payload = await res.json(); } catch { /* ignore */ }
+  // Server trả JSON dạng { success:false, message, ... }
+  let payload: any = null;
+  try {
+    payload = await res.json();
+  } catch {
+    /* ignore */
+  }
 
-    const msg =
-        payload?.message ||
-        `Request failed with status ${res.status}`;
+  const msg =
+    payload?.message ||
+    payload?.message?.[0] ||
+    `Request failed with status ${res.status}`;
 
-    throw new ApiError(msg, res.status, payload);
+  throw new ApiError(msg, res.status, payload);
 }
-

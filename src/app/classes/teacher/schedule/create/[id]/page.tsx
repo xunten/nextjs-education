@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React from "react";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navigation from "@/components/navigation";
@@ -33,23 +33,38 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { Plus, X, Calendar as CalendarIcon, Eye } from "lucide-react";
-import { createClassSchedule, getAllLocations } from "@/services/classScheduleService";
-import { toast } from 'react-toastify';
+import {
+  createClassSchedule,
+  getAllLocations,
+} from "@/services/classScheduleService";
+import { toast } from "react-toastify";
 // import { toast } from "sonner";
 
 // Utility function thay thế cho cn
-const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
+const cn = (...classes: string[]) => classes.filter(Boolean).join(" ");
 
 // Format date function đơn giản
 const formatDate = (date: Date) => {
-  return date.toLocaleDateString('vi-VN');
+  return date.toLocaleDateString("vi-VN");
 };
 
 // Generate sessions based on patterns
-const generatePreviewSessions = (startDate: Date, endDate: Date, slots: SlotType[], locations: any[]) => {
-  const sessions: { date: Date; dayOfWeek: string; startPeriod: number; endPeriod: number; location: any; periods: string; }[] = [];
+const generatePreviewSessions = (
+  startDate: Date,
+  endDate: Date,
+  slots: SlotType[],
+  locations: any[]
+) => {
+  const sessions: {
+    date: Date;
+    dayOfWeek: string;
+    startPeriod: number;
+    endPeriod: number;
+    location: any;
+    periods: string;
+  }[] = [];
   const current = new Date(startDate);
-  
+
   const dayMapping: { [key: string]: number } = {
     SUNDAY: 0,
     MONDAY: 1,
@@ -62,24 +77,24 @@ const generatePreviewSessions = (startDate: Date, endDate: Date, slots: SlotType
 
   while (current <= endDate) {
     const currentDayOfWeek = current.getDay();
-    
-    slots.forEach(slot => {
+
+    slots.forEach((slot) => {
       if (dayMapping[slot.dayOfWeek] === currentDayOfWeek) {
-        const location = locations.find(loc => loc.id === slot.locationId);
+        const location = locations.find((loc) => loc.id === slot.locationId);
         sessions.push({
           date: new Date(current),
           dayOfWeek: slot.dayOfWeek,
           startPeriod: slot.startPeriod,
           endPeriod: slot.endPeriod,
-          location: location?.roomName || '',
-          periods: `Tiết ${slot.startPeriod} - ${slot.endPeriod}`
+          location: location?.roomName || "",
+          periods: `Tiết ${slot.startPeriod} - ${slot.endPeriod}`,
         });
       }
     });
-    
+
     current.setDate(current.getDate() + 1);
   }
-  
+
   return sessions.sort((a, b) => a.date.getTime() - b.date.getTime());
 };
 
@@ -109,33 +124,41 @@ const schema: yup.ObjectSchema<FormData> = yup.object({
     .nullable()
     .typeError("Vui lòng chọn ngày kết thúc")
     .required("Vui lòng chọn ngày kết thúc")
-    .test('is-after-start', 'Ngày kết thúc phải sau ngày bắt đầu', function(value) {
-      const startDate = this.parent.startDate;
-      if (startDate && value) {
-        return value >= startDate;
+    .test(
+      "is-after-start",
+      "Ngày kết thúc phải sau ngày bắt đầu",
+      function (value) {
+        const startDate = this.parent.startDate;
+        if (startDate && value) {
+          return value >= startDate;
+        }
+        return true;
       }
-      return true;
-    }),
-  slots: yup.array().of(
-    yup.object({
-      dayOfWeek: yup.string().required("Vui lòng chọn ngày trong tuần"),
-      startPeriod: yup
-        .number()
-        .typeError("Tiết bắt đầu phải là số")
-        .required("Vui lòng nhập tiết bắt đầu")
-        .min(1, "Tiết học không hợp lệ"),
-      endPeriod: yup
-        .number()
-        .typeError("Tiết kết thúc phải là số")
-        .required("Vui lòng nhập tiết kết thúc")
-        .min(yup.ref("startPeriod"), "Tiết kết thúc phải sau tiết bắt đầu"),
-      locationId: yup
-        .number()
-        .nullable()
-        .typeError("Vui lòng chọn địa điểm")
-        .required("Vui lòng chọn địa điểm"),
-    })
-  ).required("Vui lòng thêm ít nhất một buổi học").default([]),
+    ),
+  slots: yup
+    .array()
+    .of(
+      yup.object({
+        dayOfWeek: yup.string().required("Vui lòng chọn ngày trong tuần"),
+        startPeriod: yup
+          .number()
+          .typeError("Tiết bắt đầu phải là số")
+          .required("Vui lòng nhập tiết bắt đầu")
+          .min(1, "Tiết học không hợp lệ"),
+        endPeriod: yup
+          .number()
+          .typeError("Tiết kết thúc phải là số")
+          .required("Vui lòng nhập tiết kết thúc")
+          .min(yup.ref("startPeriod"), "Tiết kết thúc phải sau tiết bắt đầu"),
+        locationId: yup
+          .number()
+          .nullable()
+          .typeError("Vui lòng chọn địa điểm")
+          .required("Vui lòng chọn địa điểm"),
+      })
+    )
+    .required("Vui lòng thêm ít nhất một buổi học")
+    .default([]),
 });
 
 const dayOfWeekMapping: { [key: string]: string } = {
@@ -170,7 +193,12 @@ export default function ClassSchedulePage() {
       startDate: new Date(),
       endDate: new Date(),
       slots: [
-        { dayOfWeek: "", startPeriod: 1, endPeriod: 2, locationId: null as number | null },
+        {
+          dayOfWeek: "",
+          startPeriod: 1,
+          endPeriod: 2,
+          locationId: null as number | null,
+        },
       ],
     },
   });
@@ -188,7 +216,13 @@ export default function ClassSchedulePage() {
     // Tải danh sách địa điểm khi component mount
     getAllLocations()
       .then((data) => setLocations(data))
-      .catch((err) => console.error("Lỗi khi lấy danh sách địa điểm:", err));
+      .catch((err) => {
+        console.error("Lỗi khi lấy danh sách địa điểm:", err);
+        toast.error(
+          err?.response?.data?.messages?.[0] ??
+            "Không thể tải danh sách địa điểm!"
+        );
+      });
   }, []);
 
   const handlePreview = () => {
@@ -197,13 +231,18 @@ export default function ClassSchedulePage() {
       toast.error("Vui lòng chọn ngày bắt đầu và kết thúc");
       return;
     }
-    
-    if (slots.some(slot => !slot.dayOfWeek || !slot.locationId)) {
+
+    if (slots.some((slot) => !slot.dayOfWeek || !slot.locationId)) {
       toast.error("Vui lòng điền đầy đủ thông tin các buổi học");
       return;
     }
 
-    const sessions = generatePreviewSessions(startDate, endDate, slots, locations);
+    const sessions = generatePreviewSessions(
+      startDate,
+      endDate,
+      slots,
+      locations
+    );
     setPreviewSessions(sessions);
     setShowPreview(true);
   };
@@ -246,8 +285,8 @@ export default function ClassSchedulePage() {
 
       const payload = {
         classId: parseInt(classId),
-        startDate: data.startDate.toISOString().split('T')[0],
-        endDate: data.endDate.toISOString().split('T')[0],
+        startDate: data.startDate.toISOString().split("T")[0],
+        endDate: data.endDate.toISOString().split("T")[0],
         slots: data.slots.map((slot) => ({
           dayOfWeek: slot.dayOfWeek,
           startPeriod: slot.startPeriod,
@@ -257,18 +296,24 @@ export default function ClassSchedulePage() {
       };
       console.log("Payload gửi đi:", payload);
       await createClassSchedule(payload);
-    toast.success("Tạo lịch học thành công!");
-    router.push(`/classes/${classId}`);
-  } catch (err: any) {
-    console.error("Lỗi khi tạo lịch học:", err);
-
-    // Nếu backend trả message "Lớp này đã có lịch học" thì hiển thị cảnh báo
-    if (err.response?.status === 400 || err.response?.status === 409) {
-      toast.error(err.response.data?.message || "Lớp này đã có lịch học, không thể tạo mới.");
-    } else {
-      toast.error("Có lỗi xảy ra khi tạo lịch học.");
+      toast.success("Tạo lịch học thành công!");
+      router.push(`/classes/${classId}`);
+    } catch (err: any) {
+      console.error("Lỗi khi tạo lịch học:", err);
+      toast.error(
+        err.response.data?.messages?.[0] ||
+          "Lớp này đã có lịch học, không thể tạo mới."
+      );
+      // Nếu backend trả message "Lớp này đã có lịch học" thì hiển thị cảnh báo
+      // if (err.response?.status === 400 || err.response?.status === 409) {
+      //   toast.error(
+      //     err.response.data?.message ||
+      //       "Lớp này đã có lịch học, không thể tạo mới."
+      //   );
+      // } else {
+      //   toast.error("Có lỗi xảy ra khi tạo lịch học.");
+      // }
     }
-  }
   };
 
   return (
@@ -290,10 +335,14 @@ export default function ClassSchedulePage() {
                   <Input
                     type="date"
                     onChange={(e) => {
-                      const dateValue = e.target.value ? new Date(e.target.value) : null;
+                      const dateValue = e.target.value
+                        ? new Date(e.target.value)
+                        : null;
                       setValue("startDate", dateValue);
                     }}
-                    value={startDate ? startDate.toISOString().split('T')[0] : ''}
+                    value={
+                      startDate ? startDate.toISOString().split("T")[0] : ""
+                    }
                   />
                   {errors.startDate && (
                     <p className="text-red-500 text-sm">
@@ -308,10 +357,12 @@ export default function ClassSchedulePage() {
                   <Input
                     type="date"
                     onChange={(e) => {
-                      const dateValue = e.target.value ? new Date(e.target.value) : null;
+                      const dateValue = e.target.value
+                        ? new Date(e.target.value)
+                        : null;
                       setValue("endDate", dateValue);
                     }}
-                    value={endDate ? endDate.toISOString().split('T')[0] : ''}
+                    value={endDate ? endDate.toISOString().split("T")[0] : ""}
                   />
                   {errors.endDate && (
                     <p className="text-red-500 text-sm">
@@ -415,7 +466,9 @@ export default function ClassSchedulePage() {
                     <div className="sm:col-span-2">
                       <Label>Địa điểm</Label>
                       <Select
-                        value={watch(`slots.${index}.locationId`)?.toString() || ""}
+                        value={
+                          watch(`slots.${index}.locationId`)?.toString() || ""
+                        }
                         onValueChange={(val) => {
                           const locationId = val ? Number(val) : null;
                           setValue(`slots.${index}.locationId`, locationId);
@@ -429,7 +482,7 @@ export default function ClassSchedulePage() {
                             <SelectItem key={loc.id} value={loc.id.toString()}>
                               {loc.roomName}
                             </SelectItem>
-                            ))}
+                          ))}
                         </SelectContent>
                       </Select>
                       {errors.slots?.[index]?.locationId && (
@@ -471,11 +524,12 @@ export default function ClassSchedulePage() {
                 Xem thử lịch học - Lớp {classId}
               </DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-4">
               <div className="text-sm text-gray-600">
-                Từ {startDate ? formatDate(startDate) : ''} đến {endDate ? formatDate(endDate) : ''} 
-                ({previewSessions.length} buổi học)
+                Từ {startDate ? formatDate(startDate) : ""} đến{" "}
+                {endDate ? formatDate(endDate) : ""}({previewSessions.length}{" "}
+                buổi học)
               </div>
 
               {/* Timetable Grid */}
@@ -485,8 +539,11 @@ export default function ClassSchedulePage() {
                   <div className="bg-green-100 p-3 text-center font-medium border-b border-gray-200">
                     Ngày/Tuần
                   </div>
-                  {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((day) => (
-                    <div key={day} className="bg-green-100 p-3 text-center font-medium border-b border-gray-200">
+                  {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((day) => (
+                    <div
+                      key={day}
+                      className="bg-green-100 p-3 text-center font-medium border-b border-gray-200"
+                    >
                       {day}
                     </div>
                   ))}
@@ -494,47 +551,50 @@ export default function ClassSchedulePage() {
                   {/* Generate weeks */}
                   {(() => {
                     if (!startDate || !endDate) return null;
-                    
+
                     const weeks = [];
                     const start = new Date(startDate);
                     const end = new Date(endDate);
                     let current = new Date(start);
-                    
+
                     // Start from beginning of week
                     current.setDate(current.getDate() - current.getDay());
-                    
+
                     while (current <= end) {
                       const weekStart = new Date(current);
                       const weekDates = [];
-                      
+
                       // Generate 7 days for this week
                       for (let i = 0; i < 7; i++) {
                         const date = new Date(current);
                         date.setDate(date.getDate() + i);
                         weekDates.push(date);
                       }
-                      
+
                       weeks.push(weekDates);
                       current.setDate(current.getDate() + 7);
                     }
-                    
+
                     return weeks.map((week, weekIndex) => (
                       <React.Fragment key={weekIndex}>
                         {/* Week number */}
                         <div className="bg-green-50 p-3 text-center text-sm font-medium border-b border-gray-200">
                           Tuần {weekIndex + 1}
                         </div>
-                        
+
                         {week.map((date, dayIndex) => {
-                          const daySession = previewSessions.find(session => 
-                            session.date.toDateString() === date.toDateString()
+                          const daySession = previewSessions.find(
+                            (session) =>
+                              session.date.toDateString() ===
+                              date.toDateString()
                           );
-                          
-                          const isInRange = date >= startDate && date <= endDate;
-                          
+
+                          const isInRange =
+                            date >= startDate && date <= endDate;
+
                           return (
-                            <div 
-                              key={dayIndex} 
+                            <div
+                              key={dayIndex}
                               className={cn(
                                 "p-2 border-b border-gray-200 min-h-[80px]",
                                 isInRange ? "bg-white" : "bg-gray-50"
@@ -543,7 +603,7 @@ export default function ClassSchedulePage() {
                               <div className="text-xs text-gray-500 mb-1">
                                 {date.getDate()}/{date.getMonth() + 1}
                               </div>
-                              
+
                               {daySession && (
                                 <div className="bg-green-100 rounded p-2 text-xs">
                                   <div className="font-medium text-green-800">
@@ -565,12 +625,15 @@ export default function ClassSchedulePage() {
 
               {/* Sessions Summary */}
               <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-800 mb-3">Tóm tắt lịch học:</h4>
+                <h4 className="font-medium text-gray-800 mb-3">
+                  Tóm tắt lịch học:
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {previewSessions.slice(0, 9).map((session, index) => (
                     <div key={index} className="bg-white rounded p-3 border">
                       <div className="font-medium text-sm">
-                        {session.date.toLocaleDateString('vi-VN')} - {dayOfWeekMapping[session.dayOfWeek]}
+                        {session.date.toLocaleDateString("vi-VN")} -{" "}
+                        {dayOfWeekMapping[session.dayOfWeek]}
                       </div>
                       <div className="text-green-600 text-sm">
                         {session.periods}
@@ -592,13 +655,10 @@ export default function ClassSchedulePage() {
             </div>
 
             <DialogFooter className="gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowPreview(false)}
-              >
+              <Button variant="outline" onClick={() => setShowPreview(false)}>
                 Đóng
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   setShowPreview(false);
                   handleSubmit(onSubmit)();

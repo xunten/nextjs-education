@@ -108,15 +108,16 @@ export default function ProfileModal({
       const updatedUser = await profileService.updateProfile({
         fullName: fullName.trim(),
       });
-      toast.success("Cập nhật thông tin thành công!");
+      toast.success("Information updated successfully!");
       onUserUpdate?.(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
       setPreviewImage(updatedUser.avatarBase64 || "");
       reset();
       onClose();
     } catch (error: any) {
-      toast.error("Cập nhật thất bại");
-      console.error(error);
+      const errorMessage =
+        error?.response?.data?.messages?.[0] ?? "Update failed";
+      toast.error(errorMessage);
     } finally {
       setLoadingSave(false);
     }
@@ -126,10 +127,10 @@ export default function ProfileModal({
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      return toast.error("File không hợp lệ");
+      return toast.error("Invalid file");
     }
     if (file.size > 5 * 1024 * 1024) {
-      return toast.error("Ảnh quá lớn (tối đa 5MB)");
+      return toast.error("Image too large (max 5MB)");
     }
 
     setPreviewImage(URL.createObjectURL(file));
@@ -140,10 +141,9 @@ export default function ProfileModal({
       onUserUpdate?.(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
       setPreviewImage(updatedUser.avatarBase64 || "");
-      toast.success("Cập nhật ảnh thành công!");
+      toast.success("Photo update successful!");
     } catch (error: any) {
-      console.error("Upload error:", error);
-      toast.error(error.message || "Cập nhật thất bại");
+      toast.error(error?.response?.data?.messages?.[0] || "Update failed");
       setPreviewImage("");
     } finally {
       setLoadingUpload(false);
@@ -159,11 +159,13 @@ export default function ProfileModal({
         oldPassword: data.oldPassword,
         newPassword: data.newPassword,
       });
-      toast.success("Đổi mật khẩu thành công!");
+      toast.success("Password changed successfully!");
       reset();
       setShowPasswordForm(false);
-    } catch (error) {
-      toast.error("Đổi mật khẩu thất bại");
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.messages?.[0] ?? "Password change failed";
+      toast.error(errorMessage);
     } finally {
       setLoadingPassword(false);
     }

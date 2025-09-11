@@ -29,6 +29,7 @@ import {
   getClassById,
 } from "@/services/classService";
 import StudentNotificationToast from "@/components/classDetails/StudentNotificationToast";
+import { toast } from "react-toastify";
 
 export default function StudentClassesPage() {
   const [user, setUser] = useState<any>(null);
@@ -59,6 +60,10 @@ export default function StudentClassesPage() {
         })
         .catch((error) => {
           console.error("Lỗi khi lấy lớp học:", error);
+          toast.error(
+            error?.response?.data?.messages?.[0] ??
+              "Không thể tải danh sách lớp học!"
+          );
         });
     }
   }, [currentPage, pageSize]);
@@ -74,7 +79,13 @@ export default function StudentClassesPage() {
 
   const handleJoinClass = async () => {
     if (!joinCode) {
-      alert("Vui lòng nhập mã lớp");
+      toast.warn("Vui lòng nhập mã lớp");
+      return;
+    }
+
+    const classId = Number(joinCode);
+    if (isNaN(classId)) {
+      toast.error("Mã lớp không hợp lệ. Mã lớp phải là số!");
       return;
     }
     try {
@@ -86,22 +97,25 @@ export default function StudentClassesPage() {
 
       // Hiển thị thông báo tùy theo join_mode
       if (classInfo?.join_mode === "AUTO") {
-        alert("Bạn đã tham gia lớp thành công!");
+        toast.success("Bạn đã tham gia lớp thành công!");
       } else if (classInfo?.join_mode === "APPROVAL") {
-        alert(
+        toast.info(
           "Yêu cầu tham gia lớp đã được gửi, vui lòng đợi giáo viên xác nhận."
         );
       } else {
         // Fallback message nếu không có thông tin join_mode
-        alert(
+        toast.info(
           "Yêu cầu tham gia lớp đã được gửi, vui lòng đợi giáo viên xác nhận."
         );
       }
 
       setJoinCode("");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Lỗi khi gửi yêu cầu tham gia lớp:", err);
-      alert("Không thể gửi yêu cầu tham gia lớp");
+      toast.error(
+        err?.response?.data?.messages?.[0] ??
+          "Không thể gửi yêu cầu tham gia lớp"
+      );
     }
   };
 
@@ -112,20 +126,23 @@ export default function StudentClassesPage() {
 
       // Hiển thị thông báo tùy theo join_mode
       if (classInfo?.join_mode === "AUTO") {
-        alert("Bạn đã tham gia lớp thành công!");
+        toast.success("Bạn đã tham gia lớp thành công!");
       } else if (classInfo?.join_mode === "APPROVAL") {
-        alert(
+        toast.info(
           "Yêu cầu tham gia lớp đã được gửi, vui lòng đợi giáo viên xác nhận."
         );
       } else {
         // Fallback message nếu không có thông tin join_mode
-        alert(
+        toast.info(
           "Yêu cầu tham gia lớp đã được gửi, vui lòng đợi giáo viên xác nhận."
         );
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Lỗi khi gửi yêu cầu tham gia lớp:", err);
-      alert("Không thể gửi yêu cầu tham gia lớp");
+      toast.error(
+        err?.response?.data?.messages?.[0] ??
+          "Không thể gửi yêu cầu tham gia lớp"
+      );
     }
   };
 
@@ -133,8 +150,11 @@ export default function StudentClassesPage() {
     setLoadingSearch(true);
     try {
       // Gọi API search ở đây
-    } catch (err) {
+    } catch (err: any) {
       console.error("Lỗi tìm kiếm lớp:", err);
+      toast.error(
+        err?.response?.data?.messages?.[0] ?? "Không thể tìm kiếm lớp!"
+      );
     }
     setLoadingSearch(false);
   };
@@ -206,7 +226,7 @@ export default function StudentClassesPage() {
                       id="joinCode"
                       value={joinCode}
                       onChange={(e) => setJoinCode(e.target.value)}
-                      placeholder="Nhập mã lớp (VD: MATH12A1)"
+                      placeholder="Nhập mã lớp (VD: 123456)"
                     />
                     <Button
                       onClick={handleJoinClass}

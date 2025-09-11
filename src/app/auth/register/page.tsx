@@ -100,11 +100,13 @@ export default function RegisterPage() {
       setCountdown(60);
       toast.success("OTP đã được gửi tới email của bạn!");
     } catch (error: any) {
-      console.error("Registration error:", error); // Debug log
+      const data = error?.response?.data;
+
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Không thể gửi OTP, vui lòng thử lại.";
+        data?.messages?.[0] ||
+        data?.error ||
+        "An error occurred, please try again.";
+
       toast.error(errorMessage);
     }
   };

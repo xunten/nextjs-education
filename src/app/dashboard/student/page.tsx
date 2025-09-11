@@ -23,6 +23,7 @@ import { fetchStudentDashboard } from "@/services/dashboardService";
 import { useRecentScoreOfStudent } from "../hooks/useRecentScoreOfStudent";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import { toast } from "react-toastify";
 
 export default function StudentDashboard() {
   const router = useRouter();
@@ -138,8 +139,12 @@ export default function StudentDashboard() {
             classProgress: data.classProgress,
           }));
         })
-        .catch(() => {
+        .catch((error: any) => {
           console.error("Không thể load dashboard student");
+          toast.error(
+            error?.response?.data?.messages?.[0] ??
+              "Không thể load dashboard student"
+          );
         })
         .finally(() => setLoading(false));
     } catch {

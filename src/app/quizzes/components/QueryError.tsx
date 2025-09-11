@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, RefreshCw } from "lucide-react";
+import { extractApiError } from "../hook/quiz-hooks";
 
 interface QueryErrorProps {
   error: Error | null;
@@ -25,8 +26,7 @@ export function QueryError({
   title = "Có lỗi xảy ra",
   className = "min-h-screen flex items-center justify-center p-6",
 }: QueryErrorProps) {
-  const errorMessage = error?.message || "Đã xảy ra lỗi không xác định";
-
+  const errorMessage = extractApiError(error);
   return (
     <div className={className}>
       <Card className="max-w-md w-full">

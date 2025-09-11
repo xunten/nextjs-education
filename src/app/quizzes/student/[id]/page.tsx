@@ -18,6 +18,7 @@ import Navigation from "@/components/navigation";
 import { QuizResultDialog } from "../components/quiz-result-dialog";
 import { useQuiz } from "../../hook/quiz-hooks";
 import { QueryError } from "../../components/QueryError";
+import Swal from "sweetalert2";
 
 interface QuizResultData {
   studentName: string;
@@ -171,10 +172,16 @@ export default function QuizPage() {
         (v) => v.length === 0
       ).length;
       if (unanswered > 0) {
-        const ok = confirm(
-          `Bạn còn ${unanswered} câu chưa làm. Bạn vẫn muốn nộp chứ?`
-        );
-        if (!ok) {
+        const result = await Swal.fire({
+          title: `Bạn còn ${unanswered} câu chưa làm.`,
+          text: "Bạn vẫn muốn nộp chứ?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Có",
+          cancelButtonText: "Không",
+        });
+
+        if (!result.isConfirmed) {
           setIsSubmitting(false);
           return;
         }

@@ -131,7 +131,7 @@ export default function LoginPage() {
   if (isAuthenticated) {
     return null;
   }
-  const handleLogin = async (data) => {
+  const handleLogin = async (data: any) => {
     setIsLoading(true);
     try {
       const res = await authService.login(data);
@@ -139,7 +139,7 @@ export default function LoginPage() {
 
       login(res.data);
 
-      toast.success("Đăng nhập thành công");
+      toast.success("Login successful!");
 
       if (res.roles && res.roles.length === 1) {
         const role = res.roles[0].toLowerCase();
@@ -148,18 +148,18 @@ export default function LoginPage() {
       } else {
         router.push("/select-role");
       }
-    } catch (error) {
+    } catch (error: any) {
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Email hoặc mật khẩu không đúng";
+        error?.response?.data?.messages?.[0] ||
+        error?.response?.data?.error ||
+        "Incorrect email or password";
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
   // Xử lý gửi OTP
-  const handleForgotPassword = async (data) => {
+  const handleForgotPassword = async (data: any) => {
     setIsLoading(true);
     try {
       await authService.requestForgotOtp(data.email);
@@ -178,7 +178,7 @@ export default function LoginPage() {
   };
 
   // Xử lý xác thực OTP
-  const handleVerifyOtp = async (data) => {
+  const handleVerifyOtp = async (data: any) => {
     setIsLoading(true);
     try {
       const res = await authService.verifyForgotOtp({
@@ -188,18 +188,20 @@ export default function LoginPage() {
       setResetToken(res.resetToken);
       toast.success("Xác thực OTP thành công");
       setStep("resetPassword");
-    } catch (error) {
+    } catch (error: any) {
       const errorMessage =
-        error?.response?.data?.message ||
+        error?.response?.data?.messages?.[0] ||
+        error?.response?.data?.error ||
         error?.message ||
         "Mã OTP không đúng hoặc đã hết hạn";
+
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResetPassword = async (data) => {
+  const handleResetPassword = async (data: any) => {
     setIsLoading(true);
     try {
       await authService.resetPassword({
@@ -213,11 +215,9 @@ export default function LoginPage() {
       setEmail("");
       setResetToken("");
       setStep("login");
-    } catch (error) {
+    } catch (error: any) {
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Lỗi khi đặt lại mật khẩu";
+        error?.response?.data?.messages?.[0] ?? "Đổi mật khẩu thất bại";
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -225,7 +225,7 @@ export default function LoginPage() {
   };
 
   // Xử lý submit form
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: any) => {
     switch (step) {
       case "login":
         await handleLogin(data);
@@ -257,7 +257,9 @@ export default function LoginPage() {
                 {...register("email")}
               />
               {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.email.message as String}
+                </p>
               )}
             </div>
 
@@ -270,7 +272,7 @@ export default function LoginPage() {
               />
               {errors.password && (
                 <p className="text-sm text-red-500">
-                  {errors.password.message}
+                  {errors.password.message as String}
                 </p>
               )}
             </div>
@@ -300,7 +302,9 @@ export default function LoginPage() {
                 {...register("email")}
               />
               {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.email.message as String}
+                </p>
               )}
             </div>
           </>
@@ -319,7 +323,9 @@ export default function LoginPage() {
                 {...register("otp")}
               />
               {errors.otp && (
-                <p className="text-sm text-red-500">{errors.otp.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.otp.message as String}
+                </p>
               )}
               <p className="text-sm text-gray-500">
                 Mã OTP đã được gửi về email: <strong>{email}</strong>
@@ -340,7 +346,7 @@ export default function LoginPage() {
               />
               {errors.newPassword && (
                 <p className="text-sm text-red-500">
-                  {errors.newPassword.message}
+                  {errors.newPassword.message as String}
                 </p>
               )}
             </div>
@@ -354,7 +360,7 @@ export default function LoginPage() {
               />
               {errors.confirmPassword && (
                 <p className="text-sm text-red-500">
-                  {errors.confirmPassword.message}
+                  {errors.confirmPassword.message as String}
                 </p>
               )}
             </div>

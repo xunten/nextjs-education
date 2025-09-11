@@ -44,7 +44,14 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import DropdownNotificationBell from "@/components/classDetails/DropdownNotificationBell";
 import SubjectManager from "@/components/classes/SubjectManager";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 // Schema validate form lớp học
 const classSchema = yup.object().shape({
@@ -96,7 +103,12 @@ export default function TeacherClassesPage() {
         setPageNumber(res.pageNumber);
         setTotalPages(res.totalPages);
       })
-      .catch((err) => console.error("Lỗi khi lấy lớp:", err));
+      .catch((err) => {
+        console.error("Lỗi khi lấy lớp:", err);
+        toast.error(
+          err?.response?.data?.messages?.[0] ?? "Không thể tải danh sách lớp!"
+        );
+      });
   };
 
   const loadSubjects = () => {
@@ -104,7 +116,12 @@ export default function TeacherClassesPage() {
       .then((data) => {
         setSubjects(data);
       })
-      .catch((err) => console.error("Lỗi khi lấy môn học:", err));
+      .catch((err) => {
+        console.error("Lỗi khi lấy môn học:", err);
+        toast.error(
+          err?.response?.data?.messages?.[0] ?? "Không thể tải danh sách lớp!"
+        );
+      });
   };
 
   // Hàm mở form tạo mới
@@ -117,12 +134,12 @@ export default function TeacherClassesPage() {
   // Hàm mở form chỉnh sửa
   const openEditModal = async (classItem: any) => {
     setEditingClass(classItem);
-    
+
     // Đảm bảo subjects đã load xong
     if (subjects.length === 0) {
       await loadSubjects();
     }
-    
+
     // Delay một chút để đảm bảo state đã update
     setTimeout(() => {
       // Điền dữ liệu vào form
@@ -134,7 +151,7 @@ export default function TeacherClassesPage() {
         subjectId: classItem.subject?.id,
         joinMode: classItem.joinMode,
       });
-      
+
       setIsModalOpen(true);
     }, 100);
   };
@@ -157,7 +174,7 @@ export default function TeacherClassesPage() {
         };
 
         await updateClass(editingClass.id, payload);
-        alert("Cập nhật lớp học thành công!");
+        toast.success("Cập nhật lớp học thành công!");
       } else {
         // Tạo lớp học mới
         const payload = {
@@ -166,7 +183,7 @@ export default function TeacherClassesPage() {
         };
 
         await createClass(payload);
-        alert("Tạo lớp học thành công!");
+        toast.success("Tạo lớp học thành công!");
       }
 
       // load lại danh sách lớp
@@ -176,29 +193,43 @@ export default function TeacherClassesPage() {
       classForm.reset();
       setIsModalOpen(false);
       setEditingClass(null);
+    } catch (err: any) {
+      console.error(
+        editingClass ? "Lỗi cập nhật lớp học:" : "Lỗi tạo lớp học:",
+        err
+      );
+      const backendMessage =
+        err?.response?.data?.messages?.[0] ??
+        (editingClass ? "Cập nhật lớp học thất bại!" : "Tạo lớp học thất bại!");
 
-    } catch (err) {
-      console.error(editingClass ? "Lỗi cập nhật lớp học:" : "Lỗi tạo lớp học:", err);
-      alert(editingClass ? "Cập nhật lớp học thất bại!" : "Tạo lớp học thất bại!");
+      toast.error(backendMessage);
     }
   };
 
   const handleDeleteClass = async (id: number) => {
-    if (confirm("Bạn có chắc chắn muốn xóa lớp này?")) {
+    const result = await Swal.fire({
+      title: "Bạn có chắc chắn?",
+      text: "Lớp sẽ bị xóa vĩnh viễn!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Xóa",
+      cancelButtonText: "Hủy",
+    });
+
+    if (result.isConfirmed) {
       try {
         await deleteClass(id);
         await loadClasses(user.userId, pageNumber);
-        alert("Xóa lớp thành công!");
-      } catch (err) {
-        console.error("Lỗi xóa lớp:", err);
-        alert("Xóa lớp thất bại!");
+        toast.success("Xóa lớp thành công!");
+      } catch {
+        Swal.fire("Thất bại!", "Xóa lớp thất bại.", "error");
       }
     }
   };
 
   const copyClassCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    alert("Đã sao chép mã lớp!");
+    toast.success("Đã sao chép mã lớp!");
   };
 
   if (!user) {
@@ -248,7 +279,7 @@ export default function TeacherClassesPage() {
               />
 
               {/* Button tạo lớp học */}
-              <Button 
+              <Button
                 className="bg-green-700 hover:bg-green-800"
                 onClick={openCreateModal}
               >
@@ -259,8 +290,8 @@ export default function TeacherClassesPage() {
           </div>
 
           {/* Dialog tạo/sửa lớp học */}
-          <Dialog 
-            open={isModalOpen} 
+          <Dialog
+            open={isModalOpen}
             onOpenChange={(open) => {
               if (!open) {
                 closeModal();
@@ -273,10 +304,9 @@ export default function TeacherClassesPage() {
                   {editingClass ? "Chỉnh sửa lớp học" : "Tạo lớp học mới"}
                 </DialogTitle>
                 <DialogDescription>
-                  {editingClass 
-                    ? "Cập nhật thông tin lớp học" 
-                    : "Nhập thông tin để tạo lớp học mới"
-                  }
+                  {editingClass
+                    ? "Cập nhật thông tin lớp học"
+                    : "Nhập thông tin để tạo lớp học mới"}
                 </DialogDescription>
               </DialogHeader>
               <form
@@ -308,11 +338,9 @@ export default function TeacherClassesPage() {
                 <div className="space-y-2">
                   <Label>Học kỳ</Label>
                   <Select
-                    key={`semester-select-${editingClass?.id || 'new'}`}
+                    key={`semester-select-${editingClass?.id || "new"}`}
                     value={classForm.watch("semester") || ""}
-                    onValueChange={(val) =>
-                      classForm.setValue("semester", val)
-                    }
+                    onValueChange={(val) => classForm.setValue("semester", val)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn học kỳ" />
@@ -339,7 +367,7 @@ export default function TeacherClassesPage() {
                 <div className="space-y-2">
                   <Label>Môn học</Label>
                   <Select
-                    key={`subject-select-${editingClass?.id || 'new'}`}
+                    key={`subject-select-${editingClass?.id || "new"}`}
                     value={classForm.watch("subjectId")?.toString() || ""}
                     onValueChange={(val) =>
                       classForm.setValue("subjectId", Number(val))
@@ -368,7 +396,7 @@ export default function TeacherClassesPage() {
                 <div className="space-y-2">
                   <Label>Chế độ tham gia lớp</Label>
                   <Select
-                    key={`joinmode-select-${editingClass?.id || 'new'}`}
+                    key={`joinmode-select-${editingClass?.id || "new"}`}
                     value={classForm.watch("joinMode") || ""}
                     onValueChange={(val) =>
                       classForm.setValue("joinMode", val as "AUTO" | "APPROVAL")
@@ -397,12 +425,13 @@ export default function TeacherClassesPage() {
                   className="w-full bg-green-700 hover:bg-green-800"
                   disabled={classForm.formState.isSubmitting}
                 >
-                  {classForm.formState.isSubmitting 
-                    ? "Đang xử lý..." 
-                    : editingClass ? "Cập nhật lớp" : "Tạo lớp"
-                  }
+                  {classForm.formState.isSubmitting
+                    ? "Đang xử lý..."
+                    : editingClass
+                    ? "Cập nhật lớp"
+                    : "Tạo lớp"}
                 </Button>
-                
+
                 {/* Thêm button hủy */}
                 <Button
                   type="button"
@@ -433,31 +462,32 @@ export default function TeacherClassesPage() {
                         {classItem.description}
                       </CardDescription>
                     </div>
-                    <Badge 
+                    <Badge
                       variant="outline"
                       className={`text-xs font-medium shrink-0 ml-3 ${
-                        classItem.joinMode === "AUTO" 
-                          ? "border-green-200 bg-green-50 text-green-700" 
+                        classItem.joinMode === "AUTO"
+                          ? "border-green-200 bg-green-50 text-green-700"
                           : "border-amber-200 bg-amber-50 text-amber-700"
                       }`}
                     >
                       {classItem.joinMode === "AUTO" ? "Tự động" : "Phê duyệt"}
                     </Badge>
                   </div>
-                  
+
                   {/* Thông tin niên khóa */}
                   <div className="text-sm text-gray-500 border-t pt-3">
                     Niên khóa: {classItem.schoolYear} - {classItem.semester}
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="pt-0">
                   <div className="space-y-4">
-                    
                     {/* Mã lớp */}
                     <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-gray-500">MÃ LỚP:</span>
+                        <span className="text-xs font-medium text-gray-500">
+                          MÃ LỚP:
+                        </span>
                         <span className="text-sm font-bold text-gray-800 font-mono">
                           #{classItem.id}
                         </span>
@@ -474,7 +504,10 @@ export default function TeacherClassesPage() {
                     </div>
 
                     <div className="flex gap-2">
-                      <Link href={`/classes/${classItem.id}`} className="flex-1">
+                      <Link
+                        href={`/classes/${classItem.id}`}
+                        className="flex-1"
+                      >
                         <Button
                           size="sm"
                           className="w-full bg-green-700 hover:bg-green-800 text-white"
@@ -505,9 +538,9 @@ export default function TeacherClassesPage() {
                             <Edit3 className="h-4 w-4 mr-3 text-green-600" />
                             Chỉnh sửa lớp
                           </DropdownMenuItem>
-                          
+
                           <div className="my-1 border-t border-gray-200"></div>
-                          
+
                           <DropdownMenuItem
                             className="flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200 cursor-pointer"
                             onClick={() => handleDeleteClass(classItem.id)}

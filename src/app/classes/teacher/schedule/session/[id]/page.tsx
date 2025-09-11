@@ -25,12 +25,11 @@ import {
   ChevronRight,
   UserCheck,
 } from "lucide-react";
-import { getClassWithSessions } from '@/services/classScheduleService';
-import SessionListView from '@/components/classSchedule/SessionListView';
-import WeeklyTimetableView from '@/components/classSchedule/WeeklyTimetableView';
-import { getClassById } from '@/services/classService';
-
-
+import { getClassWithSessions } from "@/services/classScheduleService";
+import SessionListView from "@/components/classSchedule/SessionListView";
+import WeeklyTimetableView from "@/components/classSchedule/WeeklyTimetableView";
+import { getClassById } from "@/services/classService";
+import { toast } from "react-toastify";
 
 // Utility function
 const cn = (...classes: string[]) => classes.filter(Boolean).join(" ");
@@ -117,14 +116,24 @@ export default function ClassSchedulePage() {
         // Fetch class info with sessions
         const data = await getClassWithSessions(id);
         getClassById(Number(id))
-                 .then((data) => {
-                   console.log("Classes data:", data);
-                   setClassData(data)
-                 })
-                 .catch((err) => console.error("Lỗi khi lấy lớp:", err)); 
+          .then((data) => {
+            console.log("Classes data:", data);
+            setClassData(data);
+          })
+          .catch((err) => {
+            console.error("Lỗi khi lấy lớp:", err);
+            toast.error(
+              err?.response?.data?.messages?.[0] ??
+                "Không thể tải thông tin lớp!"
+            );
+          });
         setSessions(data || []);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching data:", error);
+        toast.error(
+          error?.response?.data?.messages?.[0] ||
+            "Có lỗi xảy ra khi tải dữ liệu!"
+        );
       } finally {
         setLoading(false);
       }
@@ -173,8 +182,12 @@ export default function ClassSchedulePage() {
                 </div>
                 <div className="text-right">
                   <div className="text-sm text-gray-500">Năm học</div>
-                  <div className="font-semibold">{classData?.schoolYear || 'N/A'}</div>
-                  <div className="text-sm text-gray-500 mt-1">{classData?.semester || 'N/A'}</div>
+                  <div className="font-semibold">
+                    {classData?.schoolYear || "N/A"}
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    {classData?.semester || "N/A"}
+                  </div>
                 </div>
               </div>
             </CardHeader>

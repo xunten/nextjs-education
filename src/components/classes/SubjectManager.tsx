@@ -23,6 +23,7 @@ import {
   updateSubject,
   deleteSubject,
 } from "@/services/classService";
+import Swal from "sweetalert2";
 
 const subjectSchema = yup.object().shape({
   subjectName: yup.string().required("Tên môn học không được để trống"),
@@ -35,7 +36,11 @@ interface SubjectManagerProps {
   reloadSubjects: () => Promise<void>;
 }
 
-export default function SubjectManager({ userId, subjects, reloadSubjects }: SubjectManagerProps) {
+export default function SubjectManager({
+  userId,
+  subjects,
+  reloadSubjects,
+}: SubjectManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<any>(null);
 
@@ -72,13 +77,46 @@ export default function SubjectManager({ userId, subjects, reloadSubjects }: Sub
     setIsOpen(true);
   };
 
+  // const handleDelete = async (id: number) => {
+  //   if (confirm("Bạn có chắc chắn muốn xóa môn học này?")) {
+  //     try {
+  //       await deleteSubject(id);
+  //       await reloadSubjects();
+  //     } catch (err) {
+  //       console.error("Lỗi xóa môn học:", err);
+  //     }
+  //   }
+  // };
+
   const handleDelete = async (id: number) => {
-    if (confirm("Bạn có chắc chắn muốn xóa môn học này?")) {
+    const result = await Swal.fire({
+      title: "Xác nhận xóa",
+      text: "Bạn có chắc chắn muốn xóa môn học này?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Có, xóa ngay",
+      cancelButtonText: "Hủy",
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
       try {
         await deleteSubject(id);
         await reloadSubjects();
+        Swal.fire({
+          icon: "success",
+          title: "Đã xóa!",
+          text: "Môn học đã được xóa thành công.",
+          timer: 2000,
+          showConfirmButton: false,
+        });
       } catch (err) {
         console.error("Lỗi xóa môn học:", err);
+        Swal.fire({
+          icon: "error",
+          title: "Lỗi!",
+          text: "Không thể xóa môn học. Vui lòng thử lại.",
+        });
       }
     }
   };
@@ -92,7 +130,10 @@ export default function SubjectManager({ userId, subjects, reloadSubjects }: Sub
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="border-green-700 text-green-700 hover:bg-green-50">
+        <Button
+          variant="outline"
+          className="border-green-700 text-green-700 hover:bg-green-50"
+        >
           <BookOpen className="h-4 w-4 mr-2" />
           Quản lý môn học
         </Button>
@@ -103,25 +144,38 @@ export default function SubjectManager({ userId, subjects, reloadSubjects }: Sub
             {editingSubject ? "Sửa môn học" : "Tạo môn học mới"}
           </DialogTitle>
           <DialogDescription>
-            {editingSubject ? "Cập nhật thông tin môn học" : "Nhập thông tin để tạo môn học mới"}
+            {editingSubject
+              ? "Cập nhật thông tin môn học"
+              : "Nhập thông tin để tạo môn học mới"}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
           {/* Form tạo/sửa môn học */}
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 mb-6"
+          >
             <div className="space-y-2">
               <Label htmlFor="subjectName">Tên môn học</Label>
               <Input id="subjectName" {...form.register("subjectName")} />
               {form.formState.errors.subjectName && (
-                <p className="text-red-500 text-sm">{form.formState.errors.subjectName.message}</p>
+                <p className="text-red-500 text-sm">
+                  {form.formState.errors.subjectName.message}
+                </p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Mô tả</Label>
-              <Textarea id="description" {...form.register("description")} rows={3} />
+              <Textarea
+                id="description"
+                {...form.register("description")}
+                rows={3}
+              />
               {form.formState.errors.description && (
-                <p className="text-red-500 text-sm">{form.formState.errors.description.message}</p>
+                <p className="text-red-500 text-sm">
+                  {form.formState.errors.description.message}
+                </p>
               )}
             </div>
             <div className="flex gap-2">
@@ -136,15 +190,21 @@ export default function SubjectManager({ userId, subjects, reloadSubjects }: Sub
 
           {/* Danh sách môn học */}
           <div>
-            <h3 className="text-lg font-semibold text-green-700 mb-4">Danh sách môn học</h3>
+            <h3 className="text-lg font-semibold text-green-700 mb-4">
+              Danh sách môn học
+            </h3>
             <div className="space-y-2">
               {subjects.length > 0 ? (
                 subjects.map((subject) => (
                   <Card key={subject.id} className="p-3">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-green-700 truncate">{subject.subjectName}</h4>
-                        <p className="text-sm text-gray-600 line-clamp-2">{subject.description}</p>
+                        <h4 className="font-medium text-green-700 truncate">
+                          {subject.subjectName}
+                        </h4>
+                        <p className="text-sm text-gray-600 line-clamp-2">
+                          {subject.description}
+                        </p>
                       </div>
                       <div className="flex gap-1 ml-4 flex-shrink-0">
                         <Button
@@ -168,7 +228,9 @@ export default function SubjectManager({ userId, subjects, reloadSubjects }: Sub
                   </Card>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">Chưa có môn học nào</p>
+                <p className="text-gray-500 text-center py-4">
+                  Chưa có môn học nào
+                </p>
               )}
             </div>
           </div>
