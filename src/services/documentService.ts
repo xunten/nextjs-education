@@ -49,35 +49,29 @@ export const createDocument = async ( formData: FormData): Promise<Document> => 
 };
 
 /**
- * Tăng lượt tải tài liệu
- */
-// export const increaseDocumentDownloadCount = async (id: number): Promise<void> => {
-//   await apiClient.post(`/materials/${id}/download`);
-// };
-
-// export const downloadDocument = async (materialId: number, fileName: string) => {
-//   const response = await apiClient.get(`/materials/download/${materialId}`, {
-//     responseType: 'blob', // để nhận file nhị phân thay vì text/html
-//   });
-
-//   // Tạo URL từ Blob
-//   const url = window.URL.createObjectURL(new Blob([response.data]));
-//   const link = document.createElement('a');
-//   link.href = url;
-//   link.setAttribute('download', fileName); // tên file sẽ được lưu
-//   document.body.appendChild(link);
-//   link.click();
-//   link.remove();
-//   window.URL.revokeObjectURL(url);
-// };
-
-/**
  * Tải tài liệu về máy (vừa tăng lượt tải vừa trả file)
  */
 export const downloadDocument = async (id: number) => {
   return apiClient.get(`/materials/download/${id}`, {
     responseType: "blob",
   });
+};
+
+/**
+ * Cập nhật tài liệu
+ */
+export const updateDocument = async (id: number, formData: FormData): Promise<Document> => {
+  const response = await apiClient.put<Document>(`/materials/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+/**
+ * Xóa tài liệu
+ */
+export const deleteDocument = async (id: number): Promise<void> => {
+  await apiClient.delete(`/materials/${id}`);
 };
 
 

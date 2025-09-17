@@ -283,7 +283,7 @@ export default function StudentDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Link href="/assignments/student">
+                  <Link href="#">
                     <Button className="w-full h-20 flex flex-col gap-2">
                       <FileText className="h-5 w-5" />
                       <span className="text-xs">Bài tập</span>
@@ -307,13 +307,13 @@ export default function StudentDashboard() {
                       <span className="text-xs">Điểm số</span>
                     </Button>
                   </Link>
-                  <Link href="/schedule/student">
+                  <Link href="/quizzes/student">
                     <Button
                       variant="outline"
                       className="w-full h-20 flex flex-col gap-2 bg-transparent"
                     >
                       <Calendar className="h-5 w-5" />
-                      <span className="text-xs">Lịch học</span>
+                      <span className="text-xs">Trắc nghiệm</span>
                     </Button>
                   </Link>
                 </div>

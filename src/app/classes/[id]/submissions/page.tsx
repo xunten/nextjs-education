@@ -215,19 +215,20 @@ const SubmissionPage = () => {
 
   const handleDownloadSubmission = async (
     submissionId: number,
-    filePath: string
+    filePath: string,
+    fileName: string,
+    fileType: string
   ) => {
     try {
-      // 1. Gọi API tải file
+      // 1. Gọi API tải file (backend trả blob)
       const blob = await downloadSubmissionFile(submissionId);
 
-      // 2. Tạo URL từ blob
-      const url = window.URL.createObjectURL(new Blob([blob]));
+      // 2. Tạo URL từ blob với đúng MIME type
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: fileType })
+      );
 
-      // 3. Lấy tên file gốc
-      const fileName = getFileName(filePath);
-
-      // 4. Tạo thẻ <a> ẩn để tải
+      // 3. Dùng tên file gốc từ DB
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", fileName);
@@ -235,8 +236,8 @@ const SubmissionPage = () => {
       document.body.appendChild(link);
       link.click();
 
-      // 5. Xóa DOM & URL
-      link.parentNode?.removeChild(link);
+      // 4. Xoá sau khi tải
+      link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Tải file thất bại:", error);
@@ -371,7 +372,7 @@ const SubmissionPage = () => {
           </CardContent>
         </Card>
 
-        
+
 
         {/* Submissions List */}
         <Card>
@@ -462,7 +463,10 @@ const SubmissionPage = () => {
                               <TooltipTrigger asChild>
                                 <Button
                                   onClick={() =>
-                                    handleDownloadSubmission(submission.id, submission.filePath ?? "")
+                                    handleDownloadSubmission(submission.id,
+                                      submission.filePath,
+                                      submission.fileName,
+                                      submission.fileType)
                                   }
                                   size="sm"
                                   variant="outline"
@@ -640,7 +644,7 @@ const SubmissionPage = () => {
                       <span className="text-gray-600">Tệp đính kèm:</span>
                       <div className="flex items-center space-x-2">
                         <FileText className="h-4 w-4" />
-                        <span>{getFileName(selectedSubmission.filePath ?? "")}</span>
+                        <span>{selectedSubmission.fileName}</span>
                         <span className="text-gray-500">
                           ({selectedSubmission.fileSize})
                         </span>
@@ -652,7 +656,6 @@ const SubmissionPage = () => {
                         <div className="bg-gray-50 p-3 rounded-lg">
                           <p className="text-sm font-medium mb-1">Nhận xét:</p>
                           <p className="text-sm text-gray-700">
-                            {/* {selectedSubmission.teacherComment} */}
                             {selectedSubmission.teacherComment ? (
                               role === "teacher" || selectedSubmission.assignment.published ? (
                                 <div className="max-w-xs truncate" title={selectedSubmission.teacherComment}>
@@ -676,7 +679,9 @@ const SubmissionPage = () => {
                         onClick={() =>
                           handleDownloadSubmission(
                             selectedSubmission.id,
-                            selectedSubmission.filePath ?? ""
+                            selectedSubmission.filePath,
+                            selectedSubmission.fileName,
+                            selectedSubmission.fileType
                           )
                         }
                         size="sm"

@@ -200,19 +200,20 @@ export default function AssignmentsPage() {
 
     const handleDownloadAssignment = async (
         assignmentId: number,
-        filePath: string
+        filePath: string,
+        fileName: string,
+        fileType: string
     ) => {
         try {
-            // 1. Gọi API tải file
+            // 1. Gọi API tải file (trả blob từ backend)
             const blob = await downloadAssignmentFile(assignmentId);
 
-            // 2. Tạo URL từ blob
-            const url = window.URL.createObjectURL(new Blob([blob]));
+            // 2. Tạo URL từ blob với type chuẩn
+            const url = window.URL.createObjectURL(
+                new Blob([blob], { type: fileType })
+            );
 
-            // 3. Lấy tên file gốc
-            const fileName = getFileName(filePath);
-
-            // 4. Tạo thẻ <a> ẩn để tải
+            // 3. Dùng đúng tên gốc từ DB
             const link = document.createElement("a");
             link.href = url;
             link.setAttribute("download", fileName);
@@ -220,8 +221,8 @@ export default function AssignmentsPage() {
             document.body.appendChild(link);
             link.click();
 
-            // 5. Xóa DOM & URL
-            link.parentNode?.removeChild(link);
+            // 4. Xoá sau khi tải
+            link.remove();
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error("Tải file thất bại:", error);
@@ -319,19 +320,20 @@ export default function AssignmentsPage() {
 
     const handleDownloadSubmission = async (
         submissionId: number,
-        filePath: string
+        filePath: string,
+        fileName: string,
+        fileType: string
     ) => {
         try {
-            // 1. Gọi API tải file
+            // 1. Gọi API tải file (backend trả blob)
             const blob = await downloadSubmissionFile(submissionId);
 
-            // 2. Tạo URL từ blob
-            const url = window.URL.createObjectURL(new Blob([blob]));
+            // 2. Tạo URL từ blob với đúng MIME type
+            const url = window.URL.createObjectURL(
+                new Blob([blob], { type: fileType })
+            );
 
-            // 3. Lấy tên file gốc
-            const fileName = getFileName(filePath);
-
-            // 4. Tạo thẻ <a> ẩn để tải
+            // 3. Dùng tên file gốc từ DB
             const link = document.createElement("a");
             link.href = url;
             link.setAttribute("download", fileName);
@@ -339,8 +341,8 @@ export default function AssignmentsPage() {
             document.body.appendChild(link);
             link.click();
 
-            // 5. Xóa DOM & URL
-            link.parentNode?.removeChild(link);
+            // 4. Xoá sau khi tải
+            link.remove();
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error("Tải file thất bại:", error);
@@ -480,10 +482,13 @@ export default function AssignmentsPage() {
                                             <span
                                                 className="text-blue-600 cursor-pointer hover:underline"
                                                 onClick={() =>
-                                                    handleDownloadAssignment(assignment.id, assignment.filePath ?? "")
+                                                    handleDownloadAssignment(assignment.id,
+                                                        assignment.filePath,
+                                                        assignment.fileName,
+                                                        assignment.fileType)
                                                 }
                                             >
-                                                {getFileName(assignment.filePath ?? "")}
+                                                {assignment.fileName}
                                             </span>{" "}
                                             ({assignment.fileSize})
                                         </TableCell>
@@ -555,13 +560,24 @@ export default function AssignmentsPage() {
                                                                                         </p>
                                                                                     </div>
                                                                                     <div className="text-right">
-                                                                                        {submission.status === "GRADED" ? (
-                                                                                            <div>
-                                                                                                <Badge className="bg-green-500 mb-1">Đã chấm</Badge>
-                                                                                                <p className="text-lg font-bold">
-                                                                                                    {submission.score}/10
-                                                                                                </p>
-                                                                                            </div>
+                                                                                        {submission.status?.toLowerCase() === "graded" ? (
+                                                                                            submission.assignment?.published ? (
+                                                                                                <div>
+                                                                                                    <Badge className="bg-green-500 mb-1">Đã chấm</Badge>
+                                                                                                    <p
+                                                                                                        className={`text-lg font-bold ${getGradeColor(
+                                                                                                            submission.score ?? 0
+                                                                                                        )}`}
+                                                                                                    >
+                                                                                                        {submission.score}/10
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            ) : (
+                                                                                                <div>
+                                                                                                    <Badge variant="secondary" className="mb-1">Chờ công bố</Badge>
+                                                                                                    <p className="text-sm text-gray-500">Giáo viên chưa công bố điểm</p>
+                                                                                                </div>
+                                                                                            )
                                                                                         ) : (
                                                                                             <Badge variant="secondary">Chờ chấm</Badge>
                                                                                         )}
@@ -574,7 +590,7 @@ export default function AssignmentsPage() {
                                                                                         <span className="text-gray-600">Tệp đính kèm:</span>
                                                                                         <div className="flex items-center space-x-2">
                                                                                             <FileText className="h-4 w-4" />
-                                                                                            <span>{getFileName(submission.filePath ?? "")}</span>
+                                                                                            <span>{submission.fileName}</span>
                                                                                             <span className="text-gray-500">
                                                                                                 ({submission.fileSize})
                                                                                             </span>
@@ -586,7 +602,16 @@ export default function AssignmentsPage() {
                                                                                             <div className="bg-gray-50 p-3 rounded-lg">
                                                                                                 <p className="text-sm font-medium mb-1">Nhận xét:</p>
                                                                                                 <p className="text-sm text-gray-700">
-                                                                                                    {submission.teacherComment}
+                                                                                                    {submission.teacherComment ? (
+                                                                                                        role === "teacher" || submission.assignment.published ? (
+                                                                                                            <div className="max-w-xs truncate" title={submission.teacherComment}>
+                                                                                                                {submission.teacherComment}
+                                                                                                            </div>
+                                                                                                        ) : (
+                                                                                                            <span className="text-gray-400">Chờ công bố</span>
+                                                                                                        )) : (
+                                                                                                        <span className="text-gray-400">Không có</span>
+                                                                                                    )}
                                                                                                 </p>
                                                                                                 <p className="text-xs text-gray-500 mt-2">
                                                                                                     Chấm lúc {formatDateTime(submission.gradedAt)}
@@ -599,7 +624,9 @@ export default function AssignmentsPage() {
                                                                                             onClick={() =>
                                                                                                 handleDownloadSubmission(
                                                                                                     submission.id,
-                                                                                                    submission.filePath ?? ""
+                                                                                                    submission.filePath,
+                                                                                                    submission.fileName,
+                                                                                                    submission.fileType
                                                                                                 )
                                                                                             }
                                                                                             size="sm"
@@ -627,7 +654,7 @@ export default function AssignmentsPage() {
                                                                                                     )
                                                                                                 );
                                                                                             }}
-                                                                                            disabled={ submission.status?.toUpperCase() === "GRADED" }
+                                                                                            disabled={submission.status?.toUpperCase() === "GRADED"}
                                                                                         />
                                                                                     </div>
                                                                                 </div>
@@ -668,3 +695,10 @@ export default function AssignmentsPage() {
         </div>
     )
 }
+
+const getGradeColor = (grade: number) => {
+  if (grade >= 9) return "text-green-600";
+  if (grade >= 8) return "text-blue-600";
+  if (grade >= 6.5) return "text-yellow-600";
+  return "text-red-600";
+};

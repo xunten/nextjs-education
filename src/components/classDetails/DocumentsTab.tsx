@@ -21,7 +21,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Upload, Download, Plus, Settings } from "lucide-react";
+import { Upload, Download, Plus, Settings, Edit, Trash } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { Document } from "@/types/document";
 import { ClassItem } from "@/types/classes";
 import { FieldValues, useForm } from "react-hook-form";
@@ -33,7 +39,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { createDocument, downloadDocument } from "@/services/documentService";
+import { createDocument, deleteDocument, downloadDocument, updateDocument } from "@/services/documentService";
+import { formatDateTime } from "@/untils/dateFormatter";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 interface CreateDocumentFormData {
   title: string;
@@ -76,14 +86,14 @@ export const documentSchema = yup.object().shape({
     .test("fileType", "Định dạng file không hợp lệ", (file) =>
       file
         ? [
-            "application/pdf",
-            "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "application/vnd.ms-excel",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "image/jpeg",
-            "image/png",
-          ].includes(file.type)
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "application/vnd.ms-excel",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "image/jpeg",
+          "image/png",
+        ].includes(file.type)
         : true
     ),
 });
@@ -139,29 +149,89 @@ export const DocumentsTab = ({ documents, classData }: DocumentTabProps) => {
     setDocumentList(documents); // đồng bộ dữ liệu ban đầu từ props
   }, [documents]);
 
+  const handleDeleteDocument = async (id: number) => {
+    Swal.fire({
+      title: "Bạn có chắc chắn?",
+      text: "Tài liệu sẽ bị xóa và không thể khôi phục!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Vâng, xóa ngay!",
+      cancelButtonText: "Hủy"
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await deleteDocument(id);
+          setDocumentList((prev) => prev.filter((doc) => doc.id !== id));
+
+          Swal.fire({
+            title: "Đã xóa!",
+            text: "Tài liệu đã được xóa thành công.",
+            icon: "success",
+            confirmButtonColor: "#3085d6"
+          });
+        } catch (error) {
+          console.error("Lỗi khi xóa tài liệu:", error);
+          Swal.fire({
+            title: "Lỗi!",
+            text: "Không thể xóa tài liệu. Vui lòng thử lại.",
+            icon: "error",
+            confirmButtonColor: "#d33"
+          });
+        }
+      }
+    });
+  };
+
+  const handleEditDocument = (doc: Document) => {
+    // Bạn có thể mở lại Dialog upload nhưng set sẵn dữ liệu của doc
+    setValue("title", doc.title);
+    setValue("description", doc.description || "");
+    setValue("classId", doc.classId);
+    // file không set lại được (do browser hạn chế), cần upload lại nếu muốn đổi
+    setIsDialogOpen(true);
+
+    // lưu state để biết đang edit hay create
+    setEditingDoc(doc);
+  };
+
+  const [editingDoc, setEditingDoc] = useState<Document | null>(null);
+
   const onSubmit = async (data: FieldValues) => {
-    const formData = data as CreateDocumentFormData;
+    const formData = new FormData();
+    formData.append("title", data.title);
+    formData.append("description", data.description || "");
+    formData.append("classId", data.classId.toString());
+    formData.append("createdBy", user.userId.toString());
+    if (data.file) {
+      formData.append("file", data.file);
+    }
+
     try {
-      const formData = new FormData();
-      formData.append("title", data.title);
-      formData.append("description", data.description || "");
-      formData.append("classId", data.classId.toString());
-      formData.append("createdBy", user.userId.toString());
-      console.log("Submitting document data:", formData);
-      if (data.file) {
-        formData.append("file", data.file);
+      if (editingDoc) {
+        // Update
+        const updatedDoc = await updateDocument(editingDoc.id, formData);
+        setDocumentList((prev) =>
+          prev.map((d) => (d.id === editingDoc.id ? updatedDoc : d))
+        );
+        toast.success("Cập nhật tài liệu thành công!");
+        setEditingDoc(null);
+      } else {
+        // Create
+        const newDocument = await createDocument(formData);
+        setDocumentList((prev) => [newDocument, ...prev]);
+        toast.success("Tạo tài liệu thành công!");
       }
 
-      const newDocument = await createDocument(formData);
-      setDocumentList((prev) => [newDocument, ...prev]); // Cập nhật danh sách tài liệu
-      reset(); // Reset form về giá trị mặc định
-      setIsDialogOpen(false); // Đóng dialog sau khi tạo thành công
-      alert("Tạo tài liệu thành công!"); // Thông báo thành công
+      reset();
+      setIsDialogOpen(false);
     } catch (error) {
-      console.error("Có lỗi xảy ra khi tạo tài liệu:", error);
-      alert("Có lỗi xảy ra khi tạo tài liệu."); // Thông báo lỗi
+      console.error("Có lỗi xảy ra:", error);
+      toast.error("Thao tác thất bại.");
     }
   };
+
 
   const handleDownload = async (doc: Document) => {
     try {
@@ -202,139 +272,173 @@ export const DocumentsTab = ({ documents, classData }: DocumentTabProps) => {
 
   if (!user) {
     // Đảm bảo không render khi chưa có user
-    return <div>Loading...</div>;
+    return (<div>
+      <div className="container mx-auto p-6 h-96 flex justify-center items-center">
+        <DotLottieReact
+          src="/animations/loading.lottie"
+          loop
+          autoplay
+        />
+      </div>
+    </div>);
   }
   const role = user?.roles?.[0] || "student";
 
-    return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Tài liệu lớp học</h3>
-                {role === "teacher" && (
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Tải lên tài liệu
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-[600px] max-h-[400px] overflow-y-auto">
-                            <DialogHeader>
-                                <DialogTitle>Tải lên tài liệu cho {classes[0]?.className}</DialogTitle>
-                                <DialogDescription>Chọn tệp tài liệu để chia sẻ với học sinh</DialogDescription>
-                            </DialogHeader>
-                            <form onSubmit={handleSubmit(onSubmit)}>
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="title">Tên tài liệu</Label>
-                                        <Input id="title" {...register("title")} placeholder="VD: Chương 1 - Giới hạn" />
-                                        {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="description">Mô tả</Label>
-                                        <Textarea
-                                            id="description"
-                                            {...register("description")}
-                                            placeholder="Mô tả chi tiết về tài liệu..."
-                                            rows={4}
-                                        />
-                                        {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="classId">Chọn lớp</Label>
-                                        <Select
-                                            onValueChange={(value) => setValue("classId", parseInt(value))}
-                                            value={watchedClassId ? watchedClassId.toString() : ""}
-                                        >
-                                            <SelectTrigger className={errors.classId ? "border-red-500" : ""}>
-                                                <SelectValue placeholder="Chọn lớp học" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {classes.map((cls) => (
-                                                    <SelectItem key={cls.id} value={cls.id.toString()}>
-                                                        {cls.className}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {errors.classId && <p className="text-red-500 text-sm">{errors.classId.message}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="file">Tệp đính kèm</Label>
-                                        <div
-                                            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50"
-                                            onClick={() => document.getElementById("file")?.click()}
-                                        >
-                                            <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                                            <p className="text-sm text-gray-600">Kéo thả tệp hoặc click để chọn</p>
-                                            <p className="text-sm text-gray-600">Hỗ trợ PDF, Word, PowerPoint</p>
-                                            <p className="text-xs text-gray-500">Tối đa 50MB</p>
-                                            {watchedFile && <p className="text-xs text-gray-500 mt-2">{watchedFile.name}</p>}
-                                        </div>
-                                        <input
-                                            id="file"
-                                            type="file"
-                                            className="hidden"
-                                            {...register("file")}
-                                            onChange={(e) => {
-                                                setValue("file", e.target.files?.[0] || null, { shouldValidate: true })
-                                            }}
-                                        />
-                                        {errors.file && <p className="text-red-500 text-sm">{errors.file.message}</p>}
-                                    </div>
-                                    <Button type="submit" className="w-full">
-                                        Tải lên
-                                    </Button>
-                                </div>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
-                )}
-            </div>
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Tài liệu lớp học</h3>
+        {role === "teacher" && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Tải lên tài liệu
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Tải lên tài liệu cho {classes[0]?.className}</DialogTitle>
+                <DialogDescription>Chọn tệp tài liệu để chia sẻ với học sinh</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Tên tài liệu</Label>
+                    <Input id="title" {...register("title")} placeholder="VD: Chương 1 - Giới hạn" />
+                    {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Mô tả</Label>
+                    <Textarea
+                      id="description"
+                      {...register("description")}
+                      placeholder="Mô tả chi tiết về tài liệu..."
+                      rows={4}
+                    />
+                    {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="classId">Chọn lớp</Label>
+                    <Select
+                      onValueChange={(value) => setValue("classId", parseInt(value))}
+                      value={watchedClassId ? watchedClassId.toString() : ""}
+                    >
+                      <SelectTrigger className={errors.classId ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Chọn lớp học" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {classes.map((cls) => (
+                          <SelectItem key={cls.id} value={cls.id.toString()}>
+                            {cls.className}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.classId && <p className="text-red-500 text-sm">{errors.classId.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="file">Tệp đính kèm</Label>
+                    <div
+                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50"
+                      onClick={() => document.getElementById("file")?.click()}
+                    >
+                      <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600">Kéo thả tệp hoặc click để chọn</p>
+                      <p className="text-sm text-gray-600">Hỗ trợ PDF, Word, PowerPoint</p>
+                      <p className="text-xs text-gray-500">Tối đa 50MB</p>
+                      {watchedFile && <p className="text-xs text-gray-500 mt-2">{watchedFile.name}</p>}
+                    </div>
+                    <input
+                      id="file"
+                      type="file"
+                      className="hidden"
+                      {...register("file")}
+                      onChange={(e) => {
+                        setValue("file", e.target.files?.[0] || null, { shouldValidate: true })
+                      }}
+                    />
+                    {errors.file && <p className="text-red-500 text-sm">{errors.file.message}</p>}
+                  </div>
+                  <Button type="submit" className="w-full">
+                    Tải lên
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {documentList.map((doc) => (
-          <Card key={doc.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
+          <Card
+            key={doc.id}
+            className="rounded-xl border border-gray-200 hover:shadow-md transition-all bg-white"
+          >
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   {doc.fileType && (
-                    <span className="text-2xl">
+                    <span className="text-3xl">
                       {getFileIcon(doc.fileType)}
                     </span>
                   )}
                   <div>
-                    <CardTitle className="text-sm font-medium">
+                    <CardTitle className="text-base font-semibold text-gray-800">
                       {doc.title}
                     </CardTitle>
-                    <CardDescription className="text-xs">
-                      {doc.description}
+                    <CardDescription className="text-sm text-gray-500 line-clamp-2">
+                      {doc.description || "Không có mô tả"}
                     </CardDescription>
                   </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex justify-between text-xs text-gray-500 mb-3">
-                <span>Tải lên: {doc.createdAt}</span>
-                <span>{doc.downloadCount} lượt tải</span>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => handleDownload(doc)}
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 bg-transparent"
-                >
-                  <Download className="h-3 w-3 mr-1" />
-                  Tải về
-                </Button>
+
                 {role === "teacher" && (
-                  <Button size="sm" variant="ghost">
-                    <Settings className="h-3 w-3" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="rounded-full hover:bg-gray-100"
+                      >
+                        <Settings className="h-4 w-4 text-gray-600" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditDocument(doc)}>
+                        <Edit className="h-4 w-4 mr-2 text-blue-500" />
+                        Chỉnh sửa
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDeleteDocument(doc.id)}
+                        className="text-red-600"
+                      >
+                        <Trash className="h-4 w-4 mr-2" />
+                        Xóa
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
+            </CardHeader>
+
+            <CardContent className="pt-2">
+              <div className="space-y-1 mb-3 text-xs text-gray-500">
+                <p>📥 Tải lên: {formatDateTime(doc.createdAt)}</p>
+                <p>♻️ Cập nhật: {formatDateTime(doc.updatedAt)}</p>
+                <p>⬇️ {doc.downloadCount} lượt tải</p>
+              </div>
+
+              <Button
+                onClick={() => handleDownload(doc)}
+                size="sm"
+                variant="outline"
+                className="w-full rounded-lg"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Tải về
+              </Button>
             </CardContent>
           </Card>
         ))}

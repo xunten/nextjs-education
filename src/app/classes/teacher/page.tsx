@@ -53,6 +53,7 @@ import {
 
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 
 // Schema validate form lớp học
@@ -255,7 +256,18 @@ export default function TeacherClassesPage() {
   };
 
   if (!user) {
-    return <div>Loading...</div>;
+    return (
+      <div>
+        <Navigation />
+        <div className="container mx-auto p-6 h-96 flex justify-center items-center">
+          <DotLottieReact
+            src="/animations/loading.lottie"
+            loop
+            autoplay
+          />
+        </div>
+      </div>
+    );
   }
 
   const uniqueClasses =
@@ -477,8 +489,8 @@ export default function TeacherClassesPage() {
                   {classForm.formState.isSubmitting
                     ? "Đang xử lý..."
                     : editingClass
-                    ? "Cập nhật lớp"
-                    : "Tạo lớp"}
+                      ? "Cập nhật lớp"
+                      : "Tạo lớp"}
                 </Button>
 
                 {/* Thêm button hủy */}
@@ -513,11 +525,10 @@ export default function TeacherClassesPage() {
                     </div>
                     <Badge
                       variant="outline"
-                      className={`text-xs font-medium shrink-0 ml-3 ${
-                        classItem.joinMode === "AUTO"
-                          ? "border-green-200 bg-green-50 text-green-700"
-                          : "border-amber-200 bg-amber-50 text-amber-700"
-                      }`}
+                      className={`text-xs font-medium shrink-0 ml-3 ${classItem.joinMode === "AUTO"
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-amber-200 bg-amber-50 text-amber-700"
+                        }`}
                     >
                       {classItem.joinMode === "AUTO" ? "Tự động" : "Phê duyệt"}
                     </Badge>

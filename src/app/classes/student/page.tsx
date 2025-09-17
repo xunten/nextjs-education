@@ -32,6 +32,7 @@ import {
 } from "@/services/classService";
 import StudentNotificationToast from "@/components/classDetails/StudentNotificationToast";
 import { toast } from "react-toastify";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 export default function StudentClassesPage() {
   const [user, setUser] = useState<any>(null);
@@ -171,7 +172,18 @@ export default function StudentClassesPage() {
   };
 
   if (!user) {
-    return <div>Loading...</div>;
+    return (
+      <div>
+        <Navigation />
+        <div className="container mx-auto p-6 h-96 flex justify-center items-center">
+          <DotLottieReact
+            src="/animations/loading.lottie"
+            loop
+            autoplay
+          />
+        </div>
+      </div>
+    );
   }
 
   return (

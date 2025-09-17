@@ -20,6 +20,7 @@ interface UpdateAssignmentProps {
     assignment: Assignment
     classData: ClassItem[];
     onSuccess?: (assignment: Assignment) => void
+    variant?: "menu" | "button"
 }
 
 interface UpdateAssignmentFormData {
@@ -57,7 +58,7 @@ const schema = yup.object().shape({
         ),
 })
 
-export default function UpdateAssignment({ assignment, classData, onSuccess }: UpdateAssignmentProps) {
+export default function UpdateAssignment({ assignment, classData, onSuccess, variant = "button", }: UpdateAssignmentProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false)
 
     const {
@@ -124,9 +125,18 @@ export default function UpdateAssignment({ assignment, classData, onSuccess }: U
     return (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="">
-                    <FilePenLine className="h-4 w-4" />
-                </Button>
+                {variant === "menu" ? (
+                    // 👇 dạng menu item
+                    <div className="flex items-center w-full px-2 py-1.5 text-sm cursor-pointer hover:bg-gray-100 rounded">
+                        <FilePenLine className="h-4 w-4 mr-2 text-blue-500" />
+                        <span>Chỉnh sửa</span>
+                    </div>
+                ) : (
+                    // 👇 dạng button bình thường
+                    <Button variant="outline" size="sm">
+                        <FilePenLine className="h-4 w-4" />
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
@@ -194,7 +204,7 @@ export default function UpdateAssignment({ assignment, classData, onSuccess }: U
                             {/* Nếu chưa chọn file mới thì hiển thị file cũ */}
                             {!watchedFile && assignment.filePath && (
                                 <p className="text-xs text-gray-500 mt-2">
-                                    File hiện tại: <span className="underline">{getFileName(assignment.filePath ?? "")}</span>
+                                    File hiện tại: <span className="underline">{assignment.fileName}</span>
                                 </p>
                             )}
                         </div>

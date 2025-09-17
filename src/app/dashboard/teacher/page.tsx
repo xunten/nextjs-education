@@ -188,7 +188,7 @@ export default function TeacherDashboard() {
                 {" "}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {" "}
-                  <Link href="/assignments/teacher">
+                  <Link href="#">
                     {" "}
                     <Button className="w-full h-20 flex flex-col gap-2">
                       {" "}

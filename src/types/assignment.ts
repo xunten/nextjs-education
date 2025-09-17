@@ -8,9 +8,10 @@ export interface Assignment {
   classId: number;
   dueDate: string;
   maxScore: number;
-  filePath?: string | null;
-  fileType?: string | null;
+  filePath: string;
+  fileType: string;
   fileSize?: number | null;
+  fileName: string;
   published: boolean;
 
   submissions?: Submission[];
@@ -27,6 +28,7 @@ export interface Submission {
   filePath: string;
   fileType: string;
   fileSize?: number | null;
+  fileName: string;
   description?: string;
   status: SubmissionStatus;
   score?: number;

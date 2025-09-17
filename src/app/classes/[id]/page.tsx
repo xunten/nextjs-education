@@ -118,8 +118,6 @@ export default function ClassDetailPage() {
   };
 
   // if (!user || !classData) return <div>Đang tải dữ liệu...</div>
-
-  // if (!classData) return <div>Đang tải dữ liệu...</div>
   if (!classData) {
     return (
       <div>
@@ -134,7 +132,6 @@ export default function ClassDetailPage() {
       </div>
     )
   }
-
 
   return (
     <div className="min-h-screen bg-gray-50">
