@@ -1,363 +1,462 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Navigation from "@/components/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect, useMemo } from "react";
+import Navigation from "@/components/navigation";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Clock, Users, CheckCircle, Edit, Eye } from "lucide-react"
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Plus,
+  Clock,
+  Users,
+  CheckCircle,
+  Edit,
+  Eye,
+  Search,
+  Filter,
+  Calendar,
+  BarChart3,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import { useQuizzesQuery } from "../hooks";
+import { TeacherQuizSkeleton } from "../components/TeacherQuizSkeleton";
+import { DataState } from "@/components/DataState";
+import { QuizCard } from "@/types/quiz.type";
+
+type QuizStatus = "upcoming" | "active" | "closed";
 
 export default function TeacherQuizzesPage() {
-  const [user, setUser] = useState<any>(null)
-  const [quizzes, setQuizzes] = useState([
-    {
-      id: 1,
-      title: "Kiểm tra 15 phút - Hàm số",
-      description: "Bài kiểm tra về định nghĩa và tính chất hàm số",
-      className: "Toán 12A1",
-      duration: 15,
-      totalQuestions: 10,
-      attempts: 25,
-      totalStudents: 35,
-      status: "active",
-      createdAt: "2024-01-20",
-      dueDate: "2024-01-25",
-    },
-    {
-      id: 2,
-      title: "Bài kiểm tra giữa kỳ",
-      description: "Kiểm tra tổng hợp các chương đã học",
-      className: "Toán 12A1",
-      duration: 45,
-      totalQuestions: 20,
-      attempts: 30,
-      totalStudents: 35,
-      status: "completed",
-      createdAt: "2024-01-15",
-      dueDate: "2024-01-20",
-    },
-  ])
-
-  const [newQuiz, setNewQuiz] = useState({
-    title: "",
-    description: "",
-    className: "",
-    duration: 15,
-    dueDate: "",
-    questions: [],
-  })
-
-  const [currentQuestion, setCurrentQuestion] = useState({
-    question: "",
-    type: "multiple-choice",
-    options: ["", "", "", ""],
-    correctAnswer: "",
-    points: 1,
-  })
+  const [user, setUser] = useState<any>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      setUser(JSON.parse(userData))
-    }
-  }, [])
+    const userData = localStorage.getItem("user");
+    if (userData) setUser(JSON.parse(userData));
+  }, []);
 
-  const handleCreateQuiz = () => {
-    const quizData = {
-      id: Date.now(),
-      ...newQuiz,
-      totalQuestions: newQuiz.questions.length,
-      attempts: 0,
-      totalStudents: 35,
-      status: "active",
-      createdAt: new Date().toISOString().split("T")[0],
-    }
-    setQuizzes([...quizzes, quizData])
-    setNewQuiz({
-      title: "",
-      description: "",
-      className: "",
-      duration: 15,
-      dueDate: "",
-      questions: [],
-    })
-  }
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState<string>("all");
+  const [selectedClass, setSelectedClass] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState<QuizStatus>("active");
 
-  const getStatusBadge = (status: string, dueDate: string) => {
-    const now = new Date()
-    const due = new Date(dueDate)
+  const {
+    data: quizzes = [],
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useQuizzesQuery();
 
-    if (status === "completed") {
-      return (
-        <Badge className="bg-green-500">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Hoàn thành
-        </Badge>
-      )
+  // Lấy danh sách unique subjects và classes
+  const { subjects, classes } = useMemo(() => {
+    const subjectSet = new Set<string>();
+    const classSet = new Set<string>();
+
+    quizzes.forEach((quiz: QuizCard) => {
+      if (quiz.subject) subjectSet.add(quiz.subject);
+      if (quiz.className) classSet.add(quiz.className);
+    });
+
+    return {
+      subjects: Array.from(subjectSet).sort(),
+      classes: Array.from(classSet).sort(),
+    };
+  }, [quizzes]);
+
+  // Hàm xác định trạng thái quiz
+  const getQuizStatus = (quiz: QuizCard): QuizStatus => {
+    try {
+      const now = new Date();
+      const startDate = new Date(quiz.startDate);
+      const endDate = new Date(quiz.endDate);
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return "closed";
+      }
+
+      if (startDate > now) return "upcoming";
+      if (startDate <= now && endDate >= now) return "active";
+      return "closed";
+    } catch (error) {
+      return "closed";
     }
-    if (due < now) {
-      return (
-        <Badge variant="destructive">
-          <Clock className="h-3 w-3 mr-1" />
-          Đã đóng
-        </Badge>
-      )
+  };
+
+  // Lọc quizzes theo search và filters
+  const filteredQuizzes = useMemo(() => {
+    return quizzes.filter((quiz: QuizCard) => {
+      const matchesSearch =
+        quiz.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        quiz.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSubject =
+        selectedSubject === "all" || quiz.subject === selectedSubject;
+      const matchesClass =
+        selectedClass === "all" || quiz.className === selectedClass;
+
+      return matchesSearch && matchesSubject && matchesClass;
+    });
+  }, [quizzes, searchTerm, selectedSubject, selectedClass]);
+
+  // Nhóm quizzes theo class và status
+  const quizzesByClassAndStatus = useMemo(() => {
+    const grouped: {
+      [className: string]: {
+        [status in QuizStatus]: QuizCard[];
+      };
+    } = {};
+
+    filteredQuizzes.forEach((quiz: QuizCard) => {
+      const className = quiz.className || "Không có lớp";
+      const status = getQuizStatus(quiz);
+
+      if (!grouped[className]) {
+        grouped[className] = {
+          upcoming: [],
+          active: [],
+          closed: [],
+        };
+      }
+
+      grouped[className][status].push(quiz);
+    });
+
+    // Sắp xếp quizzes trong mỗi group theo ngày
+    Object.keys(grouped).forEach((className) => {
+      Object.keys(grouped[className]).forEach((status) => {
+        grouped[className][status as QuizStatus].sort(
+          (a, b) =>
+            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+        );
+      });
+    });
+
+    return grouped;
+  }, [filteredQuizzes]);
+
+  // Đếm tổng số quiz theo status
+  const statusCounts = useMemo(() => {
+    const counts = { upcoming: 0, active: 0, closed: 0 };
+
+    Object.values(quizzesByClassAndStatus).forEach((classData) => {
+      counts.upcoming += classData.upcoming.length;
+      counts.active += classData.active.length;
+      counts.closed += classData.closed.length;
+    });
+
+    return counts;
+  }, [quizzesByClassAndStatus]);
+
+  const getStatusBadge = (quiz: QuizCard) => {
+    const status = getQuizStatus(quiz);
+
+    switch (status) {
+      case "upcoming":
+        return (
+          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+            <Clock className="h-3 w-3 mr-1" />
+            Sắp diễn ra
+          </Badge>
+        );
+      case "active":
+        return (
+          <Badge className="bg-green-500 text-white">
+            <Clock className="h-3 w-3 mr-1" />
+            Đang mở
+          </Badge>
+        );
+      case "closed":
+        return (
+          <Badge variant="destructive">
+            <Clock className="h-3 w-3 mr-1" />
+            Đã đóng
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="secondary" className="bg-gray-100 text-gray-800">
+            <Clock className="h-3 w-3 mr-1" />
+            Không xác định
+          </Badge>
+        );
     }
+  };
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const handleXemKetQua = (quizId: number) => {
+    router.push(`teacher/quizResult/${quizId}`);
+  };
+
+  // Render quiz cards cho một status cụ thể
+  const renderQuizCards = (quizzes: QuizCard[]) => {
     return (
-      <Badge className="bg-blue-500">
-        <Clock className="h-3 w-3 mr-1" />
-        Đang mở
-      </Badge>
-    )
-  }
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {quizzes.map((quiz: any) => (
+          <Card key={quiz.id} className="p-5 hover:shadow-md transition-shadow">
+            <div className="mb-4">
+              <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                {quiz.title}
+              </h3>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500">{quiz.subject}</span>
+                {getStatusBadge(quiz)}
+              </div>
+            </div>
+
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center text-sm text-gray-600">
+                <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                <span>
+                  {quiz.timeLimit} phút • {quiz.totalQuestions} câu
+                </span>
+              </div>
+              <div className="flex items-center text-sm text-gray-600">
+                <Users className="h-4 w-4 mr-2 text-gray-400" />
+                <span>
+                  {quiz.studentsSubmitted}/{quiz.totalStudents} đã làm
+                </span>
+              </div>
+              <div className="text-sm text-gray-500">
+                {getQuizStatus(quiz) === "upcoming"
+                  ? `Bắt đầu: ${formatDateTime(quiz.startDate)}`
+                  : `Hết hạn: ${formatDateTime(quiz.endDate)}`}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="flex-1"
+                onClick={() => handleXemKetQua(quiz.id)}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                Kết quả
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  router.push(`teacher/preview?mode=edit&id=${quiz.id}`)
+                }
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm">
+                <BarChart3 className="h-4 w-4" />
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  };
 
   const TeacherQuizView = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quản lý trắc nghiệm</h1>
-          <p className="text-gray-600">Tạo và theo dõi bài kiểm tra trắc nghiệm</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Quản lý trắc nghiệm
+          </h1>
+          <p className="text-gray-600">
+            Tạo và theo dõi bài kiểm tra trắc nghiệm
+          </p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Tạo bài kiểm tra mới
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Tạo bài kiểm tra trắc nghiệm</DialogTitle>
-              <DialogDescription>Nhập thông tin và câu hỏi cho bài kiểm tra</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="quizTitle">Tiêu đề</Label>
-                  <Input
-                    id="quizTitle"
-                    value={newQuiz.title}
-                    onChange={(e) => setNewQuiz({ ...newQuiz, title: e.target.value })}
-                    placeholder="VD: Kiểm tra 15 phút"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="className">Lớp học</Label>
-                  <Select onValueChange={(value) => setNewQuiz({ ...newQuiz, className: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn lớp" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Toán 12A1">Toán 12A1</SelectItem>
-                      <SelectItem value="Toán 11B2">Toán 11B2</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+        <Link href="teacher/createQuiz">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Tạo bài kiểm tra mới
+          </Button>
+        </Link>
+      </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Mô tả</Label>
-                <Textarea
-                  id="description"
-                  value={newQuiz.description}
-                  onChange={(e) => setNewQuiz({ ...newQuiz, description: e.target.value })}
-                  placeholder="Mô tả về bài kiểm tra..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Thời gian (phút)</Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    value={newQuiz.duration}
-                    onChange={(e) => setNewQuiz({ ...newQuiz, duration: Number.parseInt(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dueDate">Hạn làm bài</Label>
-                  <Input
-                    id="dueDate"
-                    type="date"
-                    value={newQuiz.dueDate}
-                    onChange={(e) => setNewQuiz({ ...newQuiz, dueDate: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-4">Thêm câu hỏi</h4>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Câu hỏi</Label>
-                    <Textarea
-                      value={currentQuestion.question}
-                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, question: e.target.value })}
-                      placeholder="Nhập câu hỏi..."
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    {currentQuestion.options.map((option, index) => (
-                      <div key={index} className="space-y-2">
-                        <Label>Đáp án {String.fromCharCode(65 + index)}</Label>
-                        <Input
-                          value={option}
-                          onChange={(e) => {
-                            const newOptions = [...currentQuestion.options]
-                            newOptions[index] = e.target.value
-                            setCurrentQuestion({ ...currentQuestion, options: newOptions })
-                          }}
-                          placeholder={`Đáp án ${String.fromCharCode(65 + index)}`}
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Đáp án đúng</Label>
-                      <Select
-                        onValueChange={(value) => setCurrentQuestion({ ...currentQuestion, correctAnswer: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Chọn đáp án đúng" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {currentQuestion.options
-                            .map((option, index) => ({ option, index }))
-                            .filter(({ option }) => option.trim() !== "")
-                            .map(({ option, index }) => (
-                              <SelectItem key={index} value={option}>
-                                {String.fromCharCode(65 + index)}: {option}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Điểm</Label>
-                      <Input
-                        type="number"
-                        value={currentQuestion.points}
-                        onChange={(e) =>
-                          setCurrentQuestion({ ...currentQuestion, points: Number.parseInt(e.target.value) })
-                        }
-                        min="1"
-                        max="10"
-                      />
-                    </div>
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (currentQuestion.question && currentQuestion.correctAnswer) {
-                        setNewQuiz({
-                          ...newQuiz,
-                          questions: [...newQuiz.questions, { ...currentQuestion, id: Date.now() }],
-                        })
-                        setCurrentQuestion({
-                          question: "",
-                          type: "multiple-choice",
-                          options: ["", "", "", ""],
-                          correctAnswer: "",
-                          points: 1,
-                        })
-                      }
-                    }}
-                  >
-                    Thêm câu hỏi
-                  </Button>
-                </div>
-              </div>
-
-              {newQuiz.questions.length > 0 && (
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold mb-2">Danh sách câu hỏi ({newQuiz.questions.length})</h4>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {newQuiz.questions.map((q: any, index: number) => (
-                      <div key={q.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                        <span className="text-sm">
-                          {index + 1}. {q.question.substring(0, 50)}...
-                        </span>
-                        <Badge>{q.points} điểm</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <Button onClick={handleCreateQuiz} className="w-full" disabled={newQuiz.questions.length === 0}>
-                Tạo bài kiểm tra
-              </Button>
+      <Card className="bg-white">
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Tìm kiếm theo tên bài kiểm tra..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
 
-      <div className="space-y-4">
-        {quizzes.map((quiz) => (
-          <Card key={quiz.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{quiz.title}</CardTitle>
-                  <CardDescription className="mt-1">
-                    {quiz.className} • {quiz.duration} phút • {quiz.totalQuestions} câu hỏi
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  {getStatusBadge(quiz.status, quiz.dueDate)}
-                  <Badge variant="outline">
-                    {quiz.attempts}/{quiz.totalStudents} đã làm
-                  </Badge>
-                </div>
+            <div className="min-w-[200px]">
+              <Select
+                value={selectedSubject}
+                onValueChange={setSelectedSubject}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn môn học" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả môn học</SelectItem>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject} value={subject}>
+                      {subject}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="min-w-[200px]">
+              <Select value={selectedClass} onValueChange={setSelectedClass}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn lớp học" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả lớp học</SelectItem>
+                  {classes.map((className) => (
+                    <SelectItem key={className} value={className}>
+                      {className}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabs theo Status */}
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as QuizStatus)}
+        className="w-full"
+      >
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="active" className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+            Đang mở ({statusCounts.active})
+          </TabsTrigger>
+          <TabsTrigger value="upcoming" className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+            Sắp diễn ra ({statusCounts.upcoming})
+          </TabsTrigger>
+          <TabsTrigger value="closed" className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+            Đã đóng ({statusCounts.closed})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Content cho từng tab */}
+        {(["active", "upcoming", "closed"] as QuizStatus[]).map((status) => (
+          <TabsContent key={status} value={status} className="mt-6">
+            {Object.keys(quizzesByClassAndStatus).length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p className="text-gray-500 text-lg">
+                    Không tìm thấy bài kiểm tra nào
+                  </p>
+                  <p className="text-gray-400 text-sm mt-2">
+                    Thử thay đổi bộ lọc hoặc tạo bài kiểm tra mới
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-8">
+                {Object.entries(quizzesByClassAndStatus).map(
+                  ([className, classData]) => {
+                    const quizzesForStatus = classData[status];
+
+                    // Chỉ hiển thị class nếu có quiz trong status này
+                    if (quizzesForStatus.length === 0) return null;
+
+                    return (
+                      <div key={className} className="space-y-4">
+                        {/* Class Header */}
+                        <div className="flex items-center gap-3">
+                          <h2 className="text-2xl font-semibold text-gray-800">
+                            Lớp {className}
+                          </h2>
+                          <Badge variant="outline" className="text-sm">
+                            {quizzesForStatus.length} bài kiểm tra
+                          </Badge>
+                        </div>
+
+                        {renderQuizCards(quizzesForStatus)}
+                      </div>
+                    );
+                  }
+                )}
+
+                {/* Hiển thị message nếu không có quiz nào trong status này */}
+                {Object.values(quizzesByClassAndStatus).every(
+                  (classData) => classData[status].length === 0
+                ) && (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <p className="text-gray-500 text-lg">
+                        Không có bài kiểm tra{" "}
+                        {status === "active"
+                          ? "đang mở"
+                          : status === "upcoming"
+                          ? "sắp diễn ra"
+                          : "đã đóng"}
+                      </p>
+                      <p className="text-gray-400 text-sm mt-2">
+                        Thử thay đổi bộ lọc hoặc tạo bài kiểm tra mới
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">{quiz.description}</p>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline">
-                  <Eye className="h-4 w-4 mr-1" />
-                  Xem kết quả
-                </Button>
-                <Button size="sm" variant="outline">
-                  <Edit className="h-4 w-4 mr-1" />
-                  Chỉnh sửa
-                </Button>
-                <Button size="sm" variant="outline">
-                  <Users className="h-4 w-4 mr-1" />
-                  Thống kê
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            )}
+          </TabsContent>
         ))}
-      </div>
+      </Tabs>
+
+      {isFetching && (
+        <div className="text-sm text-gray-500 text-center py-4">
+          Đang đồng bộ dữ liệu…
+        </div>
+      )}
     </div>
-  )
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
+
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <TeacherQuizView />
+        <DataState
+          isLoading={isLoading}
+          error={error}
+          skeleton={<TeacherQuizSkeleton />}
+          onRetry={() => refetch()}
+          variant="card"
+        >
+          <TeacherQuizView />
+        </DataState>
       </div>
     </div>
-  )
+  );
 }

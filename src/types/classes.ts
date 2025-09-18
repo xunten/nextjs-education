@@ -1,4 +1,5 @@
 export interface ClassItem {
+  data(data: any): unknown;
   id: number;
   className: string;
   schoolYear: number;
@@ -7,4 +8,6 @@ export interface ClassItem {
   createdAt: string;
   updatedAt: string;
   teacherId: number;
+  subjectId: number;
+  joinMode: 'AUTO' | 'APPROVAL' ;
 }

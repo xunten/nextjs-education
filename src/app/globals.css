@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -41,6 +40,10 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+}
+
+math-field::part(menu-toggle) {
+  display: none !important;
 }
 
 :root {
@@ -116,7 +119,101 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.tour-popup [data-tour-elem="badge"] {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+.tour-popup [data-tour-elem="controls"] button {
+  background-color: #3b82f6 !important;
+  border: none !important;
+  color: white !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+}
+
+.tour-popup [data-tour-elem="controls"] button:hover {
+  background-color: #2563eb !important;
+}
+
+.tour-popup [data-tour-elem="controls"] button[data-tour-elem="right"] {
+  background-color: #10b981 !important;
+}
+
+.tour-popup [data-tour-elem="controls"] button[data-tour-elem="right"]:hover {
+  background-color: #059669 !important;
+}
+
+.tour-popup [data-tour-elem="dot"] {
+  background-color: #d1d5db !important;
+}
+
+.tour-popup [data-tour-elem="dot"][aria-current="step"] {
+  background-color: #3b82f6 !important;
+}
+
+/* EduQuiz Tour Guide Custom Styles */
+.eduquiz-tour [data-tour-elem="badge"] {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+
+.eduquiz-tour [data-tour-elem="controls"] button {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: none !important;
+  color: white !important;
+  border-radius: 8px !important;
+  padding: 10px 20px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2) !important;
+}
+
+.eduquiz-tour [data-tour-elem="controls"] button:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+
+.eduquiz-tour [data-tour-elem="controls"] button[data-tour-elem="right"] {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+}
+
+.eduquiz-tour [data-tour-elem="controls"] button[data-tour-elem="right"]:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+}
+
+.eduquiz-tour [data-tour-elem="dot"] {
+  background-color: #d1d5db !important;
+  transition: all 0.2s ease !important;
+}
+
+.eduquiz-tour [data-tour-elem="dot"][aria-current="step"] {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  transform: scale(1.2) !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+}
+
+.eduquiz-tour [data-tour-elem="close"] {
+  background: #ef4444 !important;
+  color: white !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.eduquiz-tour [data-tour-elem="close"]:hover {
+  background: #dc2626 !important;
+  transform: scale(1.1) !important;
 }
