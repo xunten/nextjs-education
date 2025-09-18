@@ -39,6 +39,7 @@ import Link from "next/link"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { DotLottieReact } from "@lottiefiles/dotlottie-react"
 import { publishAssignment } from "@/services/assignmentService"
+import { handleViewFile } from "@/untils/fileViewer"
 
 const SubmissionPage = () => {
   const params = useParams()
@@ -394,6 +395,7 @@ const SubmissionPage = () => {
                     <TableHead>Bài tập</TableHead>
                     {role === "teacher" && <TableHead>Học sinh</TableHead>}
                     <TableHead>Ngày nộp</TableHead>
+                    <TableHead>Tệp đính kèm</TableHead>
                     <TableHead>Trạng thái</TableHead>
                     <TableHead>Điểm số</TableHead>
                     <TableHead>Nhận xét</TableHead>
@@ -424,6 +426,16 @@ const SubmissionPage = () => {
                           <Calendar className="h-4 w-4 text-gray-500" />
                           {new Date(submission.submittedAt).toLocaleString("vi-VN")}
                         </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <span
+                          className="text-blue-600 cursor-pointer hover:underline"
+                          onClick={() => handleViewFile(submission.filePath, submission.fileType)}
+                        >
+                          {submission.fileName}
+                        </span>{" "}
+                        ({submission.fileSize})
                       </TableCell>
 
                       <TableCell>{getStatusBadge(submission.status)}</TableCell>
@@ -689,6 +701,14 @@ const SubmissionPage = () => {
                       >
                         <Download className="h-3 w-3 mr-1" />
                         Tải về bài nộp
+                      </Button>
+                      <Button
+                        onClick={() => handleViewFile(selectedSubmission.filePath, selectedSubmission.fileType)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <FileText className="h-3 w-3 mr-1" />
+                        Xem file
                       </Button>
                     </div>
                   </div>

@@ -134,7 +134,7 @@ export default function UpdateUploadSubmission({ submission, assignment, onSucce
                         {submission.filePath && !watchedFile && (
                             <div className="flex items-center gap-2 text-sm text-gray-700">
                                 <FileText className="h-4 w-4" />
-                                <span>{getFileName(submission.filePath).split("/").pop()}</span>
+                                <span>{submission.fileName}</span>
                                 <Button type="button" variant="outline" size="sm" onClick={() => handleDownload(submission.filePath ?? "")}>
                                     <Download className="h-3 w-3 mr-1" /> Tải file cũ
                                 </Button>
@@ -155,7 +155,7 @@ export default function UpdateUploadSubmission({ submission, assignment, onSucce
                                 {/* Nếu chưa chọn file mới thì hiển thị file cũ */}
                                 {!watchedFile && submission.filePath && (
                                     <p className="text-xs text-gray-500 mt-2">
-                                        File hiện tại: <span className="underline">{getFileName(submission.filePath ?? "")}</span>
+                                        File hiện tại: <span className="underline">{submission.fileName}</span>
                                     </p>
                                 )}
                             </div>

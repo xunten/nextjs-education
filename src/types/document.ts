@@ -2,8 +2,8 @@ export interface Document {
   id: number;
   title: string;
   description: string | null;
-  filePath: string | null;
-  fileType: string | null;
+  filePath: string;
+  fileType: string;
   createdBy: string;
   classId: number;
   downloadCount: number;

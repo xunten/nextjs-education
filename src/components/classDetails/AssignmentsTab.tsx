@@ -81,6 +81,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { handleViewFile } from "@/untils/fileViewer";
 
 // Định nghĩa interface cho dữ liệu form
 interface CreateAssignmentFormData {
@@ -753,7 +754,9 @@ export const AssignmentsTab = ({
                                             </span>
                                             <div className="flex items-center space-x-2">
                                               <FileText className="h-4 w-4" />
-                                              <span>
+                                              <span
+                                                className="text-blue-600 cursor-pointer hover:underline"
+                                                onClick={() => handleViewFile(submission.filePath, submission.fileType)}>
                                                 {submission.fileName}
                                               </span>
                                               <span className="text-gray-500">
