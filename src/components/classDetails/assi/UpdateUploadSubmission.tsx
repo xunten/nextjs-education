@@ -43,6 +43,7 @@ const updateSchema = yup.object().shape({
 
 export default function UpdateUploadSubmission({ submission, assignment, onSuccess, disabled = false, }: UpdateSubmissionProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
 
     const {
         register,
@@ -71,6 +72,7 @@ export default function UpdateUploadSubmission({ submission, assignment, onSucce
     }, [submission, reset])
 
     const onSubmit = async (data: FieldValues) => {
+        setIsLoading(true)
         try {
             const formData = createUpdateSubmissionFormData({
                 file: data.file || undefined,
@@ -88,6 +90,8 @@ export default function UpdateUploadSubmission({ submission, assignment, onSucce
         } catch (error) {
             console.error("Có lỗi khi chỉnh sửa bài nộp:", error)
             toast.error("Có lỗi khi chỉnh sửa bài nộp.")
+        } finally {
+            setIsLoading(false)
         }
     }
 
@@ -181,7 +185,7 @@ export default function UpdateUploadSubmission({ submission, assignment, onSucce
                             />
                             {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
                         </div>
-                        <Button type='submit' className="w-full">Lưu thay đổi</Button>
+                        <Button type='submit' className="w-full" disabled={isLoading}>{isLoading ? "Đang lưu..." : "Lưu thay đổi"}</Button>
                     </div>
                 </form>
             </DialogContent>
