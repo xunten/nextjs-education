@@ -48,27 +48,57 @@ export default function SubjectManager({
     resolver: yupResolver(subjectSchema),
   });
 
-  const onSubmit = async (data: any) => {
-    try {
-      const payload = {
-        ...data,
-        createdById: userId,
-      };
+const onSubmit = async (data: any) => {
+  try {
+    const payload = {
+      ...data,
+      createdById: userId,
+    };
 
-      if (editingSubject) {
-        await updateSubject(editingSubject.id, payload);
-      } else {
-        await createSubject(payload);
-      }
-
-      await reloadSubjects();
-      form.reset();
-      setEditingSubject(null);
-      setIsOpen(false);
-    } catch (err) {
-      console.error("Lỗi tạo/cập nhật môn học:", err);
+    if (editingSubject) {
+      await updateSubject(editingSubject.id, payload);
+      // Thông báo cập nhật thành công
+      await Swal.fire({
+        icon: "success",
+        title: "Cập nhật thành công!",
+        text: "Thông tin môn học đã được cập nhật.",
+        timer: 2000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+    } else {
+      await createSubject(payload);
+      // Thông báo tạo thành công
+      await Swal.fire({
+        icon: "success", 
+        title: "Tạo thành công!",
+        text: "Môn học mới đã được tạo.",
+        timer: 2000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
     }
-  };
+
+    await reloadSubjects();
+    form.reset();
+    setEditingSubject(null);
+    setIsOpen(false);
+  } catch (err) {
+    console.error("Lỗi tạo/cập nhật môn học:", err);
+    
+    // Thông báo lỗi
+    await Swal.fire({
+      icon: "error",
+      title: "Có lỗi xảy ra!",
+      text: editingSubject 
+        ? "Không thể cập nhật môn học. Vui lòng thử lại."
+        : "Không thể tạo môn học. Vui lòng thử lại.",
+      confirmButtonText: "Đóng"
+    });
+  }
+};
 
   const handleEdit = (subject: any) => {
     setEditingSubject(subject);
@@ -89,37 +119,49 @@ export default function SubjectManager({
   // };
 
   const handleDelete = async (id: number) => {
-    const result = await Swal.fire({
-      title: "Xác nhận xóa",
-      text: "Bạn có chắc chắn muốn xóa môn học này?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Có, xóa ngay",
-      cancelButtonText: "Hủy",
-      reverseButtons: true,
-    });
+  // Đóng dialog tạm thời
+  setIsOpen(false);
+  
+  // Delay nhỏ để dialog đóng hoàn toàn
+  await new Promise(resolve => setTimeout(resolve, 100));
 
-    if (result.isConfirmed) {
-      try {
-        await deleteSubject(id);
-        await reloadSubjects();
-        Swal.fire({
-          icon: "success",
-          title: "Đã xóa!",
-          text: "Môn học đã được xóa thành công.",
-          timer: 2000,
-          showConfirmButton: false,
-        });
-      } catch (err) {
-        console.error("Lỗi xóa môn học:", err);
-        Swal.fire({
-          icon: "error",
-          title: "Lỗi!",
-          text: "Không thể xóa môn học. Vui lòng thử lại.",
-        });
-      }
+ const result = await Swal.fire({
+  title: "Xác nhận xóa",
+  text: "Hành động này sẽ xóa vĩnh viễn môn học và không thể hoàn tác!",
+  icon: "error",
+  showCancelButton: true,
+  confirmButtonText: "Xóa",
+  cancelButtonText: "Hủy bỏ", 
+  reverseButtons: true,
+  confirmButtonColor: '#dc2626',
+  cancelButtonColor: '#6b7280',
+  focusCancel: true, // Tránh nhấn nhầm
+});
+
+  if (result.isConfirmed) {
+    try {
+      await deleteSubject(id);
+      await reloadSubjects();
+      await Swal.fire({
+        icon: "success",
+        title: "Đã xóa!",
+        text: "Môn học đã được xóa thành công.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Lỗi xóa môn học:", err);
+      await Swal.fire({
+        icon: "error",
+        title: "Lỗi!",
+        text: "Không thể xóa môn học. Vui lòng thử lại.",
+      });
     }
-  };
+  }
+  
+  // Mở lại dialog
+  setIsOpen(true);
+};
 
   const handleClose = () => {
     setIsOpen(false);

@@ -231,12 +231,16 @@ export default function TeacherClassesPage() {
 
   const handleDeleteClass = async (id: number) => {
     const result = await Swal.fire({
-      title: "Bạn có chắc chắn?",
-      text: "Lớp sẽ bị xóa vĩnh viễn!",
-      icon: "warning",
+      title: "Xác nhận xóa",
+      text: "Hành động này sẽ xóa vĩnh viễn lớp học và không thể hoàn tác!",
+      icon: "error",
       showCancelButton: true,
       confirmButtonText: "Xóa",
-      cancelButtonText: "Hủy",
+      cancelButtonText: "Hủy bỏ", 
+      reverseButtons: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      focusCancel: true, // Tránh nhấn nhầm
     });
 
     if (result.isConfirmed) {
