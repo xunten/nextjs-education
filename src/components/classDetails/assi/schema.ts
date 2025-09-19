@@ -23,6 +23,7 @@ export
             .number()
             .required("Điểm tối đa là bắt buộc")
             .min(0, "Điểm tối đa phải lớn hơn hoặc bằng 0")
+            .max(10, "Điểm tối đa phải nhỏ hơn hoặc bằng 10")
             .typeError("Điểm tối đa phải là một số"),
         classId: yup
             .number()

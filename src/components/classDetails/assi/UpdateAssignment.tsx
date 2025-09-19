@@ -59,7 +59,8 @@ const schema = yup.object().shape({
 })
 
 export default function UpdateAssignment({ assignment, classData, onSuccess, variant = "button", }: UpdateAssignmentProps) {
-    const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false)
 
     const {
         register,
@@ -98,6 +99,7 @@ export default function UpdateAssignment({ assignment, classData, onSuccess, var
     }, [assignment, reset])
 
     const onSubmit = async (data: FieldValues) => {
+        setIsLoading(true)
         try {
             const formData = new FormData()
             formData.append("title", data.title)
@@ -119,6 +121,8 @@ export default function UpdateAssignment({ assignment, classData, onSuccess, var
         } catch (error) {
             console.error("Error updating assignment:", error)
             toast.error("Có lỗi xảy ra khi cập nhật bài tập.")
+        } finally {
+            setIsLoading(false)
         }
     }
 
@@ -147,46 +151,55 @@ export default function UpdateAssignment({ assignment, classData, onSuccess, var
                     {/* Tiêu đề */}
                     <div className="space-y-2">
                         <Label htmlFor="title">Tiêu đề bài tập</Label>
-                        <Input id="title" {...register("title")} />
+                        <Input id="title" {...register("title")} disabled={isLoading} />
                         {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
                     </div>
                     {/* Mô tả */}
                     <div className="space-y-2">
                         <Label htmlFor="description">Mô tả</Label>
-                        <Textarea id="description" {...register("description")} rows={4} />
+                        <Textarea id="description" {...register("description")} disabled={isLoading} rows={4} />
                         {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
                     </div>
                     {/* Hạn nộp */}
                     <div className="space-y-2">
                         <Label htmlFor="dueDate">Hạn nộp</Label>
-                        <Input id="dueDate" type="datetime-local" {...register("dueDate", { valueAsDate: true })} />
+                        <Input id="dueDate" type="datetime-local" {...register("dueDate", { valueAsDate: true })} disabled={isLoading} />
                         {errors.dueDate && <p className="text-red-500 text-sm">{errors.dueDate.message}</p>}
                     </div>
                     {/* Điểm tối đa */}
                     <div className="space-y-2">
                         <Label htmlFor="maxScore">Điểm tối đa</Label>
+                        <Input
+                            id="maxScore"
+                            type="number"
+                            value={10} // luôn = 10
+                            disabled // không cho sửa
+                            className="bg-gray-100"
+                        />
+                        {/* hidden input để đảm bảo gửi dữ liệu lên backend */}
+                        <input type="hidden" {...register("maxScore", { valueAsNumber: true })} value={10} />
+                    </div>
+
+                    {/* <div className="space-y-2">
+                        <Label htmlFor="maxScore">Điểm tối đa</Label>
                         <Input id="maxScore" type="number" {...register("maxScore", { valueAsNumber: true })} />
                         {errors.maxScore && <p className="text-red-500 text-sm">{errors.maxScore.message}</p>}
-                    </div>
+                    </div> */}
                     {/* Chọn lớp */}
+                    {/* Lớp học (auto fill) */}
                     <div className="space-y-2">
-                        <Label htmlFor="classId">Chọn lớp</Label>
-                        <Select
-                            onValueChange={(value) => setValue("classId", parseInt(value))}
-                            value={watchedClassId ? watchedClassId.toString() : ""}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Chọn lớp học" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {classData.map((cls) => (
-                                    <SelectItem key={cls.id} value={cls.id.toString()}>
-                                        {cls.className}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        {errors.classId && <p className="text-red-500 text-sm">{errors.classId.message}</p>}
+                        <Label htmlFor="classId">Lớp học</Label>
+                        <Input
+                            id="classId"
+                            value={classData[0]?.className || ""}
+                            disabled
+                            className="bg-gray-100"
+                        />
+                        <input
+                            type="hidden"
+                            {...register("classId")}
+                            value={classData[0]?.id || ""}
+                        />
                     </div>
                     {/* File đính kèm */}
                     <div className="space-y-2">
@@ -218,8 +231,8 @@ export default function UpdateAssignment({ assignment, classData, onSuccess, var
                     </div>
 
                     {/* Submit */}
-                    <Button type="submit" className="w-full">
-                        Lưu thay đổi
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading ? "Đang lưu..." : "Lưu thay đổi"}
                     </Button>
                 </form>
             </DialogContent>

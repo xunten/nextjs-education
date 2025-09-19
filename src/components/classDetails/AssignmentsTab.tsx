@@ -125,6 +125,7 @@ export const AssignmentsTab = ({
   const [visibleComments, setVisibleComments] = useState<
     Record<number, boolean>
   >({});
+  const [isLoading, setIsLoading] = useState(false)
 
   // Callback khi nộp thành công
   const handleSubmissionSuccess = (newSubmission: Submission) => {
@@ -310,12 +311,12 @@ export const AssignmentsTab = ({
         updated[assignmentId] = updated[assignmentId].map((sub) =>
           sub.id === submissionId
             ? {
-                ...sub,
-                score,
-                teacherComment,
-                status: "GRADED",
-                gradedAt: new Date().toISOString(),
-              }
+              ...sub,
+              score,
+              teacherComment,
+              status: "GRADED",
+              gradedAt: new Date().toISOString(),
+            }
             : sub
         );
       }
@@ -324,6 +325,7 @@ export const AssignmentsTab = ({
   };
 
   const onSubmit = async (data: FieldValues) => {
+    setIsLoading(true)
     const formData = data as CreateAssignmentFormData;
     try {
       const formData = new FormData();
@@ -345,6 +347,8 @@ export const AssignmentsTab = ({
     } catch (error) {
       console.error("Error creating assignment:", error);
       toast.error("Có lỗi xảy ra khi tạo bài tập."); // Thông báo lỗi
+    } finally {
+      setIsLoading(false)
     }
   };
 
@@ -538,6 +542,7 @@ export const AssignmentsTab = ({
                     <Input
                       id="title"
                       {...register("title")}
+                      disabled={isLoading}
                       placeholder="VD: Bài tập Chương 1"
                     />
                     {errors.title && (
@@ -552,6 +557,7 @@ export const AssignmentsTab = ({
                     <Textarea
                       id="description"
                       {...register("description")}
+                      disabled={isLoading}
                       placeholder="Mô tả chi tiết về bài tập..."
                       rows={4}
                     />
@@ -570,6 +576,7 @@ export const AssignmentsTab = ({
                       {...register("dueDate", {
                         valueAsDate: true, // Quan trọng: chuyển đổi giá trị input date thành Date object
                       })}
+                      disabled={isLoading}
                     />
                     {errors.dueDate && (
                       <p className="text-red-500 text-sm">
@@ -583,45 +590,29 @@ export const AssignmentsTab = ({
                     <Input
                       id="maxScore"
                       type="number"
-                      {...register("maxScore", {
-                        valueAsNumber: true, // Quan trọng: chuyển đổi giá trị input number thành number
-                      })}
-                      placeholder="VD: 100"
+                      value={10} // luôn = 10
+                      disabled // không cho sửa
+                      className="bg-gray-100"
                     />
-                    {errors.maxScore && (
-                      <p className="text-red-500 text-sm">
-                        {errors.maxScore.message}
-                      </p>
-                    )}
+                    {/* hidden input để đảm bảo gửi dữ liệu lên backend */}
+                    <input type="hidden" {...register("maxScore")} value={10} />
                   </div>
-                  {/* Chọn lớp */}
+                  {/* Lớp học (auto fill) */}
                   <div className="space-y-2">
-                    <Label htmlFor="classId">Chọn lớp</Label>
-                    <Select
-                      onValueChange={(value) =>
-                        setValue("classId", parseInt(value))
-                      }
-                      value={watchedClassId ? watchedClassId.toString() : ""}
-                    >
-                      <SelectTrigger
-                        className={errors.classId ? "border-red-500" : ""}
-                      >
-                        <SelectValue placeholder="Chọn lớp học" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {classes.map((cls) => (
-                          <SelectItem key={cls.id} value={cls.id.toString()}>
-                            {cls.className}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.classId && (
-                      <p className="text-red-500 text-sm">
-                        {errors.classId.message}
-                      </p>
-                    )}
+                    <Label htmlFor="classId">Lớp học</Label>
+                    <Input
+                      id="classId"
+                      value={classes[0]?.className || ""}
+                      disabled
+                      className="bg-gray-100"
+                    />
+                    <input
+                      type="hidden"
+                      {...register("classId")}
+                      value={classes[0]?.id || ""}
+                    />
                   </div>
+
                   {/* File đính kèm */}
                   <div className="space-y-2">
                     <Label htmlFor="file">Tệp đính kèm</Label>
@@ -647,6 +638,7 @@ export const AssignmentsTab = ({
                       onChange={(e) => {
                         setValue("file", e.target.files?.[0] || null); // Lấy file đầu tiên hoặc null
                       }}
+                      disabled={isLoading}
                     />
                     {errors.file && (
                       <p className="text-red-500 text-sm">
@@ -655,8 +647,8 @@ export const AssignmentsTab = ({
                     )}
                   </div>
                   {/* Submit */}
-                  <Button type="submit" className="w-full">
-                    Tạo bài tập
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Đang tạo bài tập..." : "Tạo bài tập"}
                   </Button>
                 </div>
               </form>
@@ -762,7 +754,7 @@ export const AssignmentsTab = ({
                                   </p>
                                 </div>
                               ) : submissionsByAssignment[assignment.id]
-                                  ?.length === 0 ||
+                                ?.length === 0 ||
                                 !submissionsByAssignment[assignment.id] ? (
                                 <div className="text-center py-8 text-gray-500">
                                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -793,7 +785,7 @@ export const AssignmentsTab = ({
                                           </div>
                                           <div className="text-right">
                                             {submission.status?.toLowerCase() ===
-                                            "graded" ? (
+                                              "graded" ? (
                                               <div>
                                                 <Badge className="bg-green-500 mb-1">
                                                   Đã chấm
@@ -884,7 +876,7 @@ export const AssignmentsTab = ({
                                             </Button>
 
                                             {submission.status ===
-                                            "SUBMITTED" ? (
+                                              "SUBMITTED" ? (
                                               // Chấm bài
                                               <AssignmentScore
                                                 assignment={assignment}
@@ -954,23 +946,23 @@ export const AssignmentsTab = ({
                             assignment.published
                               ? "default"
                               : submissionsByAssignment[assignment.id]
-                                  ?.length === countstudents &&
+                                ?.length === countstudents &&
                                 submissionsByAssignment[assignment.id]?.every(
                                   (s) => s.status === "GRADED"
                                 )
-                              ? "default"
-                              : "outline"
+                                ? "default"
+                                : "outline"
                           }
                           className={
                             assignment.published
                               ? "bg-green-500 text-white"
                               : submissionsByAssignment[assignment.id]
-                                  ?.length === countstudents &&
+                                ?.length === countstudents &&
                                 submissionsByAssignment[assignment.id]?.every(
                                   (s) => s.status === "GRADED"
                                 )
-                              ? "bg-blue-500 text-white"
-                              : "opacity-50 cursor-not-allowed"
+                                ? "bg-blue-500 text-white"
+                                : "opacity-50 cursor-not-allowed"
                           }
                           disabled={
                             assignment.published ||
@@ -1002,16 +994,15 @@ export const AssignmentsTab = ({
                           {assignment.published
                             ? "Đã công bố điểm"
                             : (submissionsByAssignment[assignment.id]?.length ??
-                                0) < countstudents
-                            ? `Chưa đủ bài nộp (${
-                                submissionsByAssignment[assignment.id]
-                                  ?.length || 0
+                              0) < countstudents
+                              ? `Chưa đủ bài nộp (${submissionsByAssignment[assignment.id]
+                                ?.length || 0
                               }/${countstudents})`
-                            : !submissionsByAssignment[assignment.id]?.every(
+                              : !submissionsByAssignment[assignment.id]?.every(
                                 (s) => s.status === "GRADED"
                               )
-                            ? "Chưa chấm xong"
-                            : "Công bố điểm"}
+                                ? "Chưa chấm xong"
+                                : "Công bố điểm"}
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -1104,7 +1095,7 @@ export const AssignmentsTab = ({
                                           </div>
                                           <div className="text-right">
                                             {userSubmission.status?.toLowerCase() ===
-                                            "graded" ? (
+                                              "graded" ? (
                                               assignment.published ? (
                                                 <div>
                                                   <Badge className="bg-green-500 mb-1">
