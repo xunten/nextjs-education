@@ -40,6 +40,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DotLottieReact } from "@lottiefiles/dotlottie-react"
 import { publishAssignment } from "@/services/assignmentService"
 import { handleViewFile } from "@/untils/fileViewer"
+import { se } from "date-fns/locale"
 
 const SubmissionPage = () => {
   const params = useParams()
@@ -431,7 +432,7 @@ const SubmissionPage = () => {
                       <TableCell>
                         <span
                           className="text-blue-600 cursor-pointer hover:underline"
-                          onClick={() => handleViewFile(submission.filePath, submission.fileType)}
+                          onClick={() => handleViewFile(submission.filePath, submission.fileType, submission.fileName)}
                         >
                           {submission.fileName}
                         </span>{" "}
@@ -703,7 +704,7 @@ const SubmissionPage = () => {
                         Tải về bài nộp
                       </Button>
                       <Button
-                        onClick={() => handleViewFile(selectedSubmission.filePath, selectedSubmission.fileType)}
+                        onClick={() => handleViewFile(selectedSubmission.filePath, selectedSubmission.fileType, selectedSubmission.fileName)}
                         size="sm"
                         variant="outline"
                       >

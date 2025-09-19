@@ -819,7 +819,8 @@ export const AssignmentsTab = ({
                                                 onClick={() =>
                                                   handleViewFile(
                                                     submission.filePath,
-                                                    submission.fileType
+                                                    submission.fileType,
+                                                    submission.fileName
                                                   )
                                                 }
                                               >
@@ -1143,7 +1144,8 @@ export const AssignmentsTab = ({
                                                 onClick={() =>
                                                   handleViewFile(
                                                     userSubmission.filePath,
-                                                    userSubmission.fileType
+                                                    userSubmission.fileType,
+                                                    userSubmission.fileName
                                                   )
                                                 }
                                               >

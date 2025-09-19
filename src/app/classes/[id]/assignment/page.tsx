@@ -637,7 +637,7 @@ export default function AssignmentsPage() {
                                                                                             Tải về
                                                                                         </Button>
                                                                                         <Button
-                                                                                            onClick={() => handleViewFile(submission.filePath, submission.fileType)}
+                                                                                            onClick={() => handleViewFile(submission.filePath, submission.fileType, submission.fileName)}
                                                                                             size="sm"
                                                                                             variant="outline"
                                                                                         >

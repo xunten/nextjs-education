@@ -1,4 +1,4 @@
-export function handleViewFile(filePath: string, fileType: string) {
+export function handleViewFile(filePath: string, fileType: string, fileName?: string) {
   if (!filePath) return;
 
   const directViewTypes = [
@@ -23,7 +23,15 @@ export function handleViewFile(filePath: string, fileType: string) {
   if (directViewTypes.includes(fileType)) {
     window.open(filePath, "_blank");
   } else {
-    const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(filePath)}&embedded=true`;
+    // 👉 Thêm fileName vào URL (nếu có) để Google Docs Viewer nhận diện đúng
+    const urlWithName = fileName
+      ? `${filePath}?response-content-disposition=inline;filename=${encodeURIComponent(fileName)}`
+      : filePath;
+
+    const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(
+      urlWithName
+    )}&embedded=true`;
+
     window.open(viewerUrl, "_blank");
   }
 }
