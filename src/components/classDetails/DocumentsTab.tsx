@@ -103,6 +103,7 @@ export const DocumentsTab = ({ documents, classData }: DocumentTabProps) => {
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [documentList, setDocumentList] = useState<Document[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
 
   const {
     register,
@@ -199,6 +200,7 @@ export const DocumentsTab = ({ documents, classData }: DocumentTabProps) => {
   const [editingDoc, setEditingDoc] = useState<Document | null>(null);
 
   const onSubmit = async (data: FieldValues) => {
+    setIsLoading(true)
     const formData = new FormData();
     formData.append("title", data.title);
     formData.append("description", data.description || "");
@@ -229,6 +231,8 @@ export const DocumentsTab = ({ documents, classData }: DocumentTabProps) => {
     } catch (error) {
       console.error("Có lỗi xảy ra:", error);
       toast.error("Thao tác thất bại.");
+    } finally {
+      setIsLoading(false)
     }
   };
 
@@ -305,7 +309,7 @@ export const DocumentsTab = ({ documents, classData }: DocumentTabProps) => {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="title">Tên tài liệu</Label>
-                    <Input id="title" {...register("title")} placeholder="VD: Chương 1 - Giới hạn" />
+                    <Input id="title" {...register("title")} disabled={isLoading} placeholder="VD: Chương 1 - Giới hạn" />
                     {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
                   </div>
                   <div className="space-y-2">
@@ -318,7 +322,7 @@ export const DocumentsTab = ({ documents, classData }: DocumentTabProps) => {
                     />
                     {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
                   </div>
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <Label htmlFor="classId">Chọn lớp</Label>
                     <Select
                       onValueChange={(value) => setValue("classId", parseInt(value))}
@@ -336,7 +340,21 @@ export const DocumentsTab = ({ documents, classData }: DocumentTabProps) => {
                       </SelectContent>
                     </Select>
                     {errors.classId && <p className="text-red-500 text-sm">{errors.classId.message}</p>}
-                  </div>
+                  </div> */}
+                  <div className="space-y-2">
+                        <Label htmlFor="classId">Lớp học</Label>
+                        <Input
+                            id="classId"
+                            value={classes[0]?.className || ""}
+                            disabled
+                            className="bg-gray-100"
+                        />
+                        <input
+                            type="hidden"
+                            {...register("classId")}
+                            value={classes[0]?.id || ""}
+                        />
+                    </div>
                   <div className="space-y-2">
                     <Label htmlFor="file">Tệp đính kèm</Label>
                     <div
@@ -360,8 +378,8 @@ export const DocumentsTab = ({ documents, classData }: DocumentTabProps) => {
                     />
                     {errors.file && <p className="text-red-500 text-sm">{errors.file.message}</p>}
                   </div>
-                  <Button type="submit" className="w-full">
-                    Tải lên
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Đang tải lên..." : "Tải lên"}
                   </Button>
                 </div>
               </form>
