@@ -946,46 +946,35 @@ export const AssignmentsTab = ({
                           variant={
                             assignment.published
                               ? "default"
-                              : submissionsByAssignment[assignment.id]
-                                ?.length === countstudents &&
-                                submissionsByAssignment[assignment.id]?.every(
-                                  (s) => s.status === "GRADED"
-                                )
+                              : submissionsByAssignment[assignment.id]?.length === countstudents &&
+                                submissionsByAssignment[assignment.id]?.every((s) => s.status === "GRADED")
                                 ? "default"
                                 : "outline"
                           }
                           className={
                             assignment.published
                               ? "bg-green-500 text-white"
-                              : submissionsByAssignment[assignment.id]
-                                ?.length === countstudents &&
-                                submissionsByAssignment[assignment.id]?.every(
-                                  (s) => s.status === "GRADED"
-                                )
+                              : submissionsByAssignment[assignment.id]?.length === countstudents &&
+                                submissionsByAssignment[assignment.id]?.every((s) => s.status === "GRADED")
                                 ? "bg-blue-500 text-white"
-                                : "opacity-50 cursor-not-allowed"
+                                : submissionsByAssignment[assignment.id]?.some((s) => s.status === "GRADED")
+                                  ? "bg-amber-500 text-white"
+                                  : "opacity-50 cursor-not-allowed"
                           }
                           disabled={
                             assignment.published ||
-                            (submissionsByAssignment[assignment.id]?.length ??
-                              0) < countstudents ||
-                            !submissionsByAssignment[assignment.id]?.every(
-                              (s) => s.status === "GRADED"
-                            )
+                            (submissionsByAssignment[assignment.id]?.length ?? 0) < countstudents ||
+                            !submissionsByAssignment[assignment.id]?.every((s) => s.status === "GRADED")
                           }
                           onClick={async () => {
                             try {
                               await publishAssignment(assignment.id);
                               setAssignmentList((prev) =>
                                 prev.map((item) =>
-                                  item.id === assignment.id
-                                    ? { ...item, published: true }
-                                    : item
+                                  item.id === assignment.id ? { ...item, published: true } : item
                                 )
                               );
-                              toast.success(
-                                "Đã công bố điểm cho " + assignment.title
-                              );
+                              toast.success("Đã công bố điểm cho " + assignment.title);
                             } catch (error) {
                               console.error("Lỗi khi công bố điểm:", error);
                               toast.error("Công bố điểm thất bại!");
@@ -994,17 +983,14 @@ export const AssignmentsTab = ({
                         >
                           {assignment.published
                             ? "Đã công bố điểm"
-                            : (submissionsByAssignment[assignment.id]?.length ??
-                              0) < countstudents
-                              ? `Chưa đủ bài nộp (${submissionsByAssignment[assignment.id]
-                                ?.length || 0
-                              }/${countstudents})`
-                              : !submissionsByAssignment[assignment.id]?.every(
-                                (s) => s.status === "GRADED"
-                              )
-                                ? "Chưa chấm xong"
+                            : (submissionsByAssignment[assignment.id]?.length ?? 0) < countstudents
+                              ? `Chưa đủ bài nộp (${submissionsByAssignment[assignment.id]?.length || 0}/${countstudents})`
+                              : submissionsByAssignment[assignment.id]?.filter((s) => s.status === "GRADED").length <
+                                submissionsByAssignment[assignment.id]?.length
+                                ? `Đang chấm ${submissionsByAssignment[assignment.id]?.filter((s) => s.status === "GRADED").length}/${submissionsByAssignment[assignment.id]?.length}`
                                 : "Công bố điểm"}
                         </Button>
+
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
