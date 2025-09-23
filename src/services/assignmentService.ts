@@ -1,5 +1,5 @@
 import apiClient from '@/lib/axios';
-import { Assignment } from '@/types/assignment';
+import { Assignment, PaginatedAssignmentResponse } from '@/types/assignment';
 
 /**
  * Tạo FormData cho API tạo Assignment
@@ -66,6 +66,21 @@ export const getAssignmentById = async (id: number): Promise<Assignment> => {
 // Lấy Assignment theo lớp
 export const getAssignmentsByClassId = async (classId: number): Promise<Assignment[]> => {
   const response = await apiClient.get<Assignment[]>(`/assignments/class/${classId}`);
+  return response.data;
+};
+
+// Lấy danh sách Assignment theo lớp với phân trang
+export const getAssignmentsByClassIdPaginated = async (
+  classId: number,
+  page: number = 0,   // 0-based index
+  size: number = 5
+): Promise<PaginatedAssignmentResponse> => {
+  const response = await apiClient.get<PaginatedAssignmentResponse>(
+    `/assignments/class/${classId}/paging`,
+    {
+      params: { page, size },
+    }
+  );
   return response.data;
 };
 
