@@ -4,12 +4,14 @@ import { FC, useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, FileText, Upload, CheckCircle, BookOpen, Copy } from "lucide-react"
+import { Users, FileText, Upload, CheckCircle, BookOpen, Copy, AlertCircle, Award } from "lucide-react"
 import Link from "next/link"
 import { ClassItem } from "@/types/classes"
 import { Submission } from "@/types/assignment"
 import { getSubmissionsByClassId, getSubmissionStudentByClass } from "@/services/submissionService"
 import { toast } from "react-toastify"
+import { ActivityLogResponseDTO } from "@/types/dashboard"
+import { fetchActivityClass } from "@/services/dashboardService"
 
 interface OverviewTabProps {
   classData: {
@@ -41,6 +43,8 @@ export const OverviewTab: FC<OverviewTabProps> = ({ classData, assignments, docu
 
   const [user, setUser] = useState<any>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [activities, setActivities] = useState<ActivityLogResponseDTO[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -55,6 +59,17 @@ export const OverviewTab: FC<OverviewTabProps> = ({ classData, assignments, docu
       }
     }
   }, []);
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const data = await fetchActivityClass(classData.id);
+        setActivities(data); // giả sử API trả List<DashboardActivityDTO>
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [classData.id]);
 
   const role = user?.roles?.[0] || "student";
   console.log("User role:", role);
@@ -148,33 +163,37 @@ export const OverviewTab: FC<OverviewTabProps> = ({ classData, assignments, docu
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Hoạt động gần đây</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+      <CardHeader>
+        <CardTitle>Hoạt động gần đây</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {activities.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Chưa có hoạt động nào</p>
+        ) : (
+          activities.map((activity, idx) => (
+            <div key={idx} className="flex items-center space-x-4">
+              <div className="flex-shrink-0">
+                      {activity.type === "submission" && (
+                        <FileText className="h-5 w-5 text-blue-500" />
+                      )}
+                      {activity.type === "grade" && (
+                        <Award className="h-5 w-5 text-green-500" />
+                      )}
+                      {activity.type === "question" && (
+                        <AlertCircle className="h-5 w-5 text-orange-500" />
+                      )}
+                    </div>
               <div className="flex-1">
-                <p className="text-sm font-medium">Nguyễn Văn An đã nộp bài tập</p>
-                <p className="text-xs text-muted-foreground">2 giờ trước</p>
+                <p className="text-sm font-medium">{activity.message}</p>
+                <p className="text-xs text-muted-foreground">
+                  {activity.time}
+                </p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <Upload className="h-5 w-5 text-blue-500" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Đã tải lên tài liệu mới</p>
-                <p className="text-xs text-muted-foreground">1 ngày trước</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Users className="h-5 w-5 text-purple-500" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Hoàng Văn Em đã tham gia lớp</p>
-                <p className="text-xs text-muted-foreground">3 ngày trước</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          ))
+        )}
+      </CardContent>
+    </Card>
 
         <Card>
           <CardHeader>

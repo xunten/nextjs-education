@@ -3,6 +3,7 @@ import apiClient from "@/lib/axios";
 import {
   TeacherDashboardResponse,
   StudentDashboardResponse,
+  ActivityLogResponseDTO,
 } from "@/types/dashboard";
 import { useQuery } from "@tanstack/react-query";
 export const useTeacherDashboard = (enabled: boolean = true) => {
@@ -24,6 +25,15 @@ export async function fetchTeacherDashboard(): Promise<TeacherDashboardResponse>
 export async function fetchStudentDashboard(): Promise<StudentDashboardResponse> {
   const res = await apiClient.get<StudentDashboardResponse>(
     "/dashboard/student"
+  );
+  return res.data;
+}
+
+export async function fetchActivityClass(
+  classId: number
+): Promise<ActivityLogResponseDTO[]> {
+  const res = await apiClient.get<ActivityLogResponseDTO[]>(
+    `/dashboard/class/${classId}`
   );
   return res.data;
 }

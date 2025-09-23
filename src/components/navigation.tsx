@@ -64,7 +64,7 @@ export default function Navigation() {
     { href: "/classes/student", label: "Lớp học", icon: Users },
     { href: "/quizzes/student", label: "Trắc nghiệm", icon: BookOpen },
     { href: "/grades/student", label: "Kết quả", icon: GraduationCap },
-    { href: "/schedule/student", label: "Thời khóa biểu", icon: Calendar },
+    // { href: "/schedule/student", label: "Thời khóa biểu", icon: Calendar },
   ];
 
   const currentRole = user?.roles?.includes("teacher") ? "teacher" : "student";
