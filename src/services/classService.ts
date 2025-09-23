@@ -40,9 +40,9 @@ export const searchClasses = async (query: string) => {
 };
 
 
-export const searchClassesPaginate = async (teacherId: number, keyword: string, page: number = 0, size: number = 6) => {
+export const searchClassesTeacher = async (teacherId: number, keyword: string) => {
   try {
-    const res = await apiClient.get(`/auth/classes/teacher/${teacherId}/searchPaginate?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`);
+    const res = await apiClient.get(`/auth/classes/teacher/${teacherId}/search?keyword=${encodeURIComponent(keyword)}`);
     console.log("Dữ liệu tìm lớp học trả về từ API:", res.data);
     return res.data;
   } catch (error) {
@@ -52,9 +52,9 @@ export const searchClassesPaginate = async (teacherId: number, keyword: string, 
 };
 
 
-export const searchClassesStudentPaginate = async (studentId: number, keyword: string, page: number = 0, size: number = 6) => {
+export const searchClassesStudent = async (studentId: number, keyword: string) => {
   try {
-    const res = await apiClient.get(`/auth/classes/student/${studentId}/searchPaginate?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`);
+    const res = await apiClient.get(`/auth/classes/student/${studentId}/search?keyword=${encodeURIComponent(keyword)}`);
     console.log("Dữ liệu tìm lớp học trả về từ API:", res.data);
     return res.data;
   } catch (error) {
