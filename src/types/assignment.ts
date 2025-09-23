@@ -49,6 +49,16 @@ export interface Submission {
   };
 }
 
+export interface PaginatedAssignmentResponse {
+  data: Assignment[];
+  pageNumber: number;
+  pageSize: number;
+  totalRecords: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
 export interface Comment {
   id: number;
   assignmentId: number;

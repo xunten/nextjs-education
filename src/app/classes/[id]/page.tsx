@@ -68,30 +68,16 @@ export default function ClassDetailPage() {
           console.log("Classes data:", data);
           setStudents(data);
         });
-        //  .catch((err) => console.error("Lỗi khi lấy lớp:", err));
-        // setClassData(classRes.data)
-        // setStudents(studentsRes.data)
 
         getAssignmentsByClassId(classId).then((data) => {
           console.log("Assignments data:", data);
           setAssignments(data);
         });
-        // Dữ liệu mẫu
-        // setAssignments([
-        //   { id: 101, status: "active" },
-        //   { id: 102, status: "closed" },
-        //   { id: 103, status: "active" },
-        // ])
 
         getDocumentsByClassId(classId).then((data) => {
           console.log("Documents data:", data);
           setDocuments(data);
         });
-
-        // setDocuments([
-        //   { id: 1, title: "Tài liệu giải tích" },
-        //   { id: 2, title: "Đề thi giữa kỳ" },
-        // ])
 
       } catch (error: any) {
         console.error("Lỗi khi tải dữ liệu lớp học:", error);
