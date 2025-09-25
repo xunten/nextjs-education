@@ -39,7 +39,7 @@ import {
   getDayOfWeek,
   dayOfWeekMapping,
 } from "@/untils/datetime";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import {
   getSessionById,
@@ -79,6 +79,7 @@ interface SessionData {
 
 export default function AttendancePage() {
   const params = useParams();
+  const router = useRouter();
   const sessionId = Number(params.sessionId);
   const classId = Number(params.id);
 
@@ -291,6 +292,8 @@ export default function AttendancePage() {
       // }
 
       toast.success("Điểm danh đã được lưu thành công!");
+      router.push(`/classes/teacher/schedule/session/${classId}`);
+
     } catch (error: any) {
       console.error("Error saving attendance:", error);
 
