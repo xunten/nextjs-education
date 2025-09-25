@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Navigation from "@/components/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   ChevronRight,
   UserCheck,
+  Plus,
 } from "lucide-react";
 import { getClassWithSessions } from "@/services/classScheduleService";
 import SessionListView from "@/components/classSchedule/SessionListView";
@@ -102,11 +103,19 @@ interface SessionData {
 
 export default function ClassSchedulePage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
 
   const [classData, setClassData] = useState<any>(null);
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>("");
+
+  useEffect(() => {
+    // Get user role from localStorage
+    const role = typeof window !== 'undefined' ? localStorage.getItem('role') || '' : '';
+    setUserRole(role);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -144,6 +153,10 @@ export default function ClassSchedulePage() {
     }
   }, [id]);
 
+  const handleCreateSchedule = () => {
+    router.push(`/classes/teacher/schedule/create/${classData.id}`);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -156,6 +169,9 @@ export default function ClassSchedulePage() {
       </div>
     );
   }
+
+  // Check if there are no sessions and user is a teacher
+  const showCreateScheduleButton = userRole === "teacher" && sessions.length === 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -180,34 +196,66 @@ export default function ClassSchedulePage() {
                     <span>Tổng số buổi: {sessions.length}</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm text-gray-500">Năm học</div>
-                  <div className="font-semibold">
-                    {classData?.schoolYear || "N/A"}
-                  </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    {classData?.semester || "N/A"}
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">Năm học</div>
+                    <div className="font-semibold">
+                      {classData?.schoolYear || "N/A"}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      {classData?.semester || "N/A"}
+                    </div>
                   </div>
                 </div>
               </div>
             </CardHeader>
           </Card>
 
-          {/* Tabs */}
-          <Tabs defaultValue="list" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="list">Danh sách buổi học</TabsTrigger>
-              <TabsTrigger value="timetable">Thời khóa biểu tuần</TabsTrigger>
-            </TabsList>
+          {/* Show empty state message when no sessions exist */}
+          {sessions.length === 0 && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Calendar className="w-16 h-16 text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                  Chưa có lịch học
+                </h3>
+                <p className="text-gray-500 text-center mb-6">
+                  {userRole === "teacher" 
+                    ? "Bạn chưa tạo lịch học cho lớp này. Nhấn nút 'Tạo lịch học' để bắt đầu."
+                    : "Giáo viên chưa tạo lịch học cho lớp này."
+                  }
+                </p>
+                {showCreateScheduleButton && (
+                  <Button 
+                    onClick={handleCreateSchedule}
+                    className="bg-green-600 hover:bg-green-700"
+                    size="lg"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Tạo lịch học ngay
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-            <TabsContent value="list">
-              <SessionListView sessions={sessions} classId={id} />
-            </TabsContent>
+          {/* Tabs - only show when there are sessions */}
+          {sessions.length > 0 && (
+            <Tabs defaultValue="list" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="list">Danh sách buổi học</TabsTrigger>
+                <TabsTrigger value="timetable">Thời khóa biểu tuần</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="timetable">
-              <WeeklyTimetableView sessions={sessions} />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="list">
+                <SessionListView sessions={sessions} classId={id} />
+              </TabsContent>
+
+              <TabsContent value="timetable">
+                <WeeklyTimetableView sessions={sessions} />
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </div>
     </div>

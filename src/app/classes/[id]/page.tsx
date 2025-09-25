@@ -150,17 +150,7 @@ export default function ClassDetailPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {localStorage.role === "teacher" && (
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={`/classes/teacher/schedule/create/${classData.id}`}
-                    >
-
-                      Tạo lịch
-
-                    </Link>
-                  </DropdownMenuItem>
-                )}
+                
                 <DropdownMenuItem asChild>
                   <Link
                     href={`/classes/teacher/schedule/session/${classData.id}`}
