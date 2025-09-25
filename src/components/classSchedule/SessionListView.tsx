@@ -99,6 +99,23 @@ export default function SessionListView({
 
   const today = new Date();
 
+  // Kiểm tra xem buổi học cuối cùng đã hoàn thành chưa
+  const isLastSessionCompleted = () => {
+    const validSessions = localSessions.filter(
+      (session) => session.status !== "CANCELLED" && session.status !== "HOLIDAY"
+    );
+    
+    if (validSessions.length === 0) return false;
+    
+    // Tìm buổi học cuối cùng (theo ngày)
+    const lastSession = validSessions.reduce((latest, current) => {
+      return new Date(current.sessionDate) > new Date(latest.sessionDate) ? current : latest;
+    });
+    
+    // Kiểm tra xem buổi học cuối cùng có trạng thái COMPLETED
+    return lastSession.status === "COMPLETED";
+  };
+
   // Huỷ buổi học + mở form buổi bù
   const handleCancel = async (sessionId: number) => {
     const cancelled = localSessions.find((s) => s.id === sessionId);
@@ -165,7 +182,7 @@ export default function SessionListView({
           Danh sách buổi học
         </CardTitle>
 
-        {localStorage.getItem("role") === "teacher" &&
+        {localStorage.getItem("role") === "teacher" && isLastSessionCompleted() &&
         <Button
           onClick={() => handleAttendanceScore() }
           className="bg-blue-600 hover:bg-blue-700"
