@@ -109,13 +109,14 @@ export default function UploadSubmission({ assignment, onSuccess }: AssignmentsT
             // setSubmissionList(prev => [newSubmission, ...prev]); // Cập nhật danh sách bài nộp
             reset() // Reset form về giá trị mặc định
             setIsDialogOpen(false) // Đóng dialog sau khi tạo thành công
-            Swal.fire({
-                position: "top-end",
-                icon: "success",
-                title: "Nộp bài tập thành công!",
-                showConfirmButton: false,
-                timer: 1500
-            });
+            // Swal.fire({
+            //     position: "top-end",
+            //     icon: "success",
+            //     title: "Nộp bài tập thành công!",
+            //     showConfirmButton: false,
+            //     timer: 1500
+            // });
+            toast.success("Nộp bài tập thành công!")
         } catch (error) {
             console.error("Có lỗi xảy ra khi tạo bài nộp:", error)
             toast.error("Có lỗi xảy ra khi tạo bài nộp.") // Thông báo lỗi

@@ -71,7 +71,7 @@ import SubmissionsTable from "./assi/SubmissionsTable";
 import { formatDateTime } from "@/untils/dateFormatter";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import { format } from "date-fns";
+import { format, set } from "date-fns";
 import UpdateUploadSubmission from "./assi/UpdateUploadSubmission";
 import UpdateAssignment from "./assi/UpdateAssignment";
 import type { Comment } from "@/types/assignment";
@@ -126,6 +126,7 @@ export const AssignmentsTab = ({
     Record<number, boolean>
   >({});
   const [isLoading, setIsLoading] = useState(false)
+  const [loadingId, setLoadingId] = useState<number | null>(null);
 
   // Callback khi nộp thành công
   const handleSubmissionSuccess = (newSubmission: Submission) => {
@@ -962,12 +963,14 @@ export const AssignmentsTab = ({
                                   : "opacity-50 cursor-not-allowed"
                           }
                           disabled={
+                            loadingId === assignment.id ||
                             assignment.published ||
                             (submissionsByAssignment[assignment.id]?.length ?? 0) < countstudents ||
                             !submissionsByAssignment[assignment.id]?.every((s) => s.status === "GRADED")
                           }
                           onClick={async () => {
                             try {
+                              setLoadingId(assignment.id);
                               await publishAssignment(assignment.id);
                               setAssignmentList((prev) =>
                                 prev.map((item) =>
@@ -978,17 +981,21 @@ export const AssignmentsTab = ({
                             } catch (error) {
                               console.error("Lỗi khi công bố điểm:", error);
                               toast.error("Công bố điểm thất bại!");
+                            } finally {
+                              setLoadingId(null); // tắt loading
                             }
                           }}
                         >
-                          {assignment.published
-                            ? "Đã công bố điểm"
-                            : (submissionsByAssignment[assignment.id]?.length ?? 0) < countstudents
-                              ? `Chưa đủ bài nộp (${submissionsByAssignment[assignment.id]?.length || 0}/${countstudents})`
-                              : submissionsByAssignment[assignment.id]?.filter((s) => s.status === "GRADED").length <
-                                submissionsByAssignment[assignment.id]?.length
-                                ? `Đang chấm ${submissionsByAssignment[assignment.id]?.filter((s) => s.status === "GRADED").length}/${submissionsByAssignment[assignment.id]?.length}`
-                                : "Công bố điểm"}
+                          {loadingId === assignment.id
+                            ? "Đang công bố điểm..."
+                            : assignment.published
+                              ? "Đã công bố điểm"
+                              : (submissionsByAssignment[assignment.id]?.length ?? 0) < countstudents
+                                ? `Chưa đủ bài nộp (${submissionsByAssignment[assignment.id]?.length || 0}/${countstudents})`
+                                : submissionsByAssignment[assignment.id]?.filter((s) => s.status === "GRADED").length <
+                                  submissionsByAssignment[assignment.id]?.length
+                                  ? `Đang chấm ${submissionsByAssignment[assignment.id]?.filter((s) => s.status === "GRADED").length}/${submissionsByAssignment[assignment.id]?.length}`
+                                  : "Công bố điểm"}
                         </Button>
 
                         <DropdownMenu>
