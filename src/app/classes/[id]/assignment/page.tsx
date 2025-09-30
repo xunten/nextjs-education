@@ -381,6 +381,26 @@ export default function AssignmentsPage() {
     }
   }
 
+  const getRemainingTime = (dueDate: string | Date) => {
+    const now = new Date();
+    const due = new Date(dueDate);
+    const diffMs = due.getTime() - now.getTime();
+
+    if (diffMs <= 0) return "Đã hết hạn";
+
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diffMs / (1000 * 60)) % 60);
+
+    let result = "Còn lại ";
+    if (days > 0) result += `${days}d `;
+    if (hours > 0) result += `${hours}h `;
+    if (minutes > 0) result += `${minutes}m`;
+
+    return result.trim();
+  };
+
+
   if (loading) {
     return (
       <div>
@@ -504,10 +524,21 @@ export default function AssignmentsPage() {
                   <TableRow key={assignment.id}>
                     <TableCell className="font-medium">{assignment.title}</TableCell>
                     <TableCell className="max-w-xs truncate">{assignment.description}</TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         {formatDateTime(assignment.dueDate)}
+                      </div>
+                    </TableCell> */}
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          {formatDateTime(assignment.dueDate)}
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {getRemainingTime(assignment.dueDate)}
+                        </span>
                       </div>
                     </TableCell>
                     {/* <TableCell>{assignment.maxScore}</TableCell> */}
@@ -693,12 +724,12 @@ export default function AssignmentsPage() {
                                                   prev.map((a) =>
                                                     a.id === assignment.id
                                                       ? {
-                                                          ...a,
-                                                          submissions:
-                                                            a.submissions?.map((s) =>
-                                                              s.id === updated.id ? updated : s,
-                                                            ) || [],
-                                                        }
+                                                        ...a,
+                                                        submissions:
+                                                          a.submissions?.map((s) =>
+                                                            s.id === updated.id ? updated : s,
+                                                          ) || [],
+                                                      }
                                                       : a,
                                                   ),
                                                 )
@@ -721,9 +752,9 @@ export default function AssignmentsPage() {
                                     prev.map((item) =>
                                       item.id === assignment.id
                                         ? {
-                                            ...item,
-                                            submissions: [...(item.submissions || []), newSubmission],
-                                          }
+                                          ...item,
+                                          submissions: [...(item.submissions || []), newSubmission],
+                                        }
                                         : item,
                                     ),
                                   )

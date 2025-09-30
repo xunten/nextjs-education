@@ -89,7 +89,7 @@ export default function Navigation() {
                   width={40}
                   height={40}
                 />
-                <span className="ml-2 text-xl font-bold text-gray-900">
+                <span className="ml-2 text-xl font-bold text-gray-900 hidden lg:inline">
                   EduSystem
                 </span>
               </Link>
@@ -103,11 +103,10 @@ export default function Navigation() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      pathname === item.href
+                    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${pathname === item.href
                         ? "text-green-600 bg-blue-50"
                         : "text-gray-700 hover:text-green-600 hover:bg-gray-50"
-                    }`}
+                      }`}
                   >
                     <Icon className="h-4 w-4 mr-2" />
                     {item.label}
@@ -183,11 +182,10 @@ export default function Navigation() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                      pathname === item.href
+                    className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${pathname === item.href
                         ? "text-green-600 bg-green-100"
                         : "text-gray-700 hover:text-green-600 hover:bg-gray-100"
-                    }`}
+                      }`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <Icon className="h-5 w-5 mr-3" />
